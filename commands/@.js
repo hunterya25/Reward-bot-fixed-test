@@ -16,14 +16,14 @@
   group: 
 CMD*/
 
-var m = Bot.getProperty("maintenance")
-var adm = Bot.getProperty("adminID")
+var m = Bot.getProperty("maintenance");
+var adm = Bot.getProperty("adminID");
 
 // 🚫 Ban Enforcement
-var _bb_isBan = Bot.getProperty("ban" + user.telegramid)
+var _bb_isBan = Bot.getProperty("ban" + user.telegramid);
 if (_bb_isBan == "ban" && user.telegramid != adm) {
-  Bot.sendMessage("*🚫 You are banned from using this bot!*\n\n_If you think this is a mistake, contact administration._")
-  return
+  Bot.sendMessage("*🚫 You are banned from using this bot!*\n\n_If you think this is a mistake, contact administration._");
+  return;
 }
 
 if (m == "✅") {
@@ -31,8 +31,8 @@ if (m == "✅") {
   } else {
     Bot.sendMessage(
       "*🛠 Maintenance In Progress!*\n\n_▪️ Bot Administration Does Some Technical Work Within This Bot.\n▪️ Due To This Reason, The Menu Was Deactivated By Administrators And Is Not Available At This Time.\n▪️ All Functionality Will Return After Completion Of Maintenance._\n\n*For The Users:*\n_ℹ️ You Can Come Back Later And Press /start To Check The Status Of The Bot._"
-    )
-    return
+    );
+    return;
   }
 }
 
@@ -43,10 +43,17 @@ if (!reqChans || (reqChans.length === 1 && reqChans[0] === "@BotsByAntares")) {
 } else if (reqChans && reqChans.length > 0) {
   reqChans = reqChans.filter(function(c) { return c && c !== "@BotsByAntares"; });
 }
+
 if (reqChans && reqChans.length > 0) {
-  var isExempt = (user.telegramid == adm) ||
-    (message && (message.indexOf("/check_join") === 0 || message.indexOf("/start") === 0 || message.indexOf("/loginme") === 0)) ||
-    (request && request.data && (request.data.indexOf("/check_join") === 0 || request.data.indexOf("/on_check_join") === 0));
+  var incomingText = (message || (request && request.message && request.message.text) || "");
+  var callbackData = (request && request.data ? request.data : "");
+
+  var isStartCmd = incomingText.indexOf("/start") === 0;
+  var isCheckCmd = incomingText.indexOf("/check_join") === 0 || callbackData.indexOf("/check_join") === 0 || callbackData.indexOf("/on_check_join") === 0;
+  var isAdminCmd = incomingText.indexOf("/loginme") === 0 || incomingText.indexOf("/set_admin") === 0 || incomingText.indexOf("/admin") === 0;
+  var isAdminUser = (user.telegramid == adm);
+
+  var isExempt = isAdminUser || isStartCmd || isCheckCmd || isAdminCmd;
 
   if (!isExempt) {
     var isChannelJoined = User.getProperty("channel_joined");
@@ -55,19 +62,26 @@ if (reqChans && reqChans.length > 0) {
       var joinKeyboard = [];
       for (var ci = 0; ci < reqChans.length; ci++) {
         var chn = reqChans[ci];
-        var chnClean = chn.replace("@", "");
-        chanListText += "👉 [" + chn + "](https://t.me/" + chnClean + ")\n";
+        var chnClean = chn.replace("@", "").trim();
+        chanListText += "👉 <a href='https://t.me/" + chnClean + "'>" + chn + "</a>\n";
         joinKeyboard.push([{ text: "📢 Join " + chn, url: "https://t.me/" + chnClean }]);
       }
       joinKeyboard.push([{ text: "✅ I Have Joined / Verify", callback_data: "/check_join" }]);
 
-      var joinPrompt = "⚠️ *Access Paused — Channel Membership Required!*\n\n" +
-        "To use this bot and its features, you *MUST* be a member of our official channel(s):\n" +
+      var joinPrompt = "⚠️ <b>Access Paused — Channel Membership Required!</b>\n\n" +
+        "To use this bot and its features, you <b>MUST</b> be a member of our official channel(s):\n\n" +
         chanListText + "\n" +
-        "_If you leave the channel in the future, bot access will automatically pause until you rejoin!_\n\n" +
-        "👇 *Please join now and click Verify below:*";
+        "<i>If you leave the channel in the future, bot access will automatically pause until you rejoin!</i>\n\n" +
+        "👇 <b>Please join the channel(s) above and tap Verify:</b>";
 
-      Bot.sendInlineKeyboard(joinKeyboard, joinPrompt);
+      Api.sendMessage({
+        text: joinPrompt,
+        parse_mode: "html",
+        disable_web_page_preview: true,
+        reply_markup: {
+          inline_keyboard: joinKeyboard
+        }
+      });
       return;
     }
 
@@ -79,9 +93,9 @@ if (reqChans && reqChans.length > 0) {
       Api.getChatMember({
         chat_id: reqChans[0],
         user_id: user.telegramid,
-        on_result: "/on_check_join_silent"
+        on_result: "/on_check_join_silent",
+        on_error: "/silent_error"
       });
     }
   }
 }
-

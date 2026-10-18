@@ -33,6 +33,11 @@ if (m) {
     reply_markup: { inline_keyboard: inl }
   });
 } else {
-  Bot.sendInlineKeyboard(inl, txt);
+  Api.sendMessage({
+    text: txt,
+    parse_mode: "markdown",
+    disable_web_page_preview: true,
+    reply_markup: { inline_keyboard: inl }
+  });
 }
 

@@ -24,7 +24,8 @@ if (user.telegramid != adm) {
 }
 
 var chName = message.trim();
-if (!chName.startsWith("@")) {
+chName = chName.replace("https://t.me/", "").replace("http://t.me/", "").replace("t.me/", "").replace("/", "");
+if (!chName.startsWith("@") && !chName.startsWith("-100")) {
   chName = "@" + chName;
 }
 

@@ -37,7 +37,12 @@ if (!pendingW || pendingW.length == 0) {
       reply_markup: { inline_keyboard: inl }
     });
   } else {
-    Bot.sendInlineKeyboard(inl, emptyText);
+    Api.sendMessage({
+      text: emptyText,
+      parse_mode: "Markdown",
+      disable_web_page_preview: true,
+      reply_markup: { inline_keyboard: inl }
+    });
   }
   return;
 }
@@ -100,5 +105,10 @@ if (mm) {
     reply_markup: { inline_keyboard: inl }
   });
 } else {
-  Bot.sendInlineKeyboard(inl, txt);
+  Api.sendMessage({
+    text: txt,
+    parse_mode: "Markdown",
+    disable_web_page_preview: true,
+    reply_markup: { inline_keyboard: inl }
+  });
 }

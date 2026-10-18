@@ -77,5 +77,10 @@ if (mm) {
     reply_markup: { inline_keyboard: inl }
   });
 } else {
-  Bot.sendInlineKeyboard(inl, statsText);
+  Api.sendMessage({
+    text: statsText,
+    parse_mode: "Markdown",
+    disable_web_page_preview: true,
+    reply_markup: { inline_keyboard: inl }
+  });
 }

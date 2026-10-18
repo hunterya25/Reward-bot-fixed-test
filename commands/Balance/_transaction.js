@@ -28,5 +28,10 @@ var inl = [
   [{ text: "💰 View Balance", callback_data: "/balance" }]
 ];
 
-Bot.sendInlineKeyboard(inl, hi);
+Api.sendMessage({
+  text: hi,
+  parse_mode: "Markdown",
+  disable_web_page_preview: true,
+  reply_markup: { inline_keyboard: inl }
+});
 

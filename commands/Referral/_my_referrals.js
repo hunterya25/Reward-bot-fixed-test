@@ -38,7 +38,12 @@ if (myRefs.length === 0) {
       reply_markup: { inline_keyboard: emptyInl }
     });
   } else {
-    Bot.sendInlineKeyboard(emptyInl, emptyText);
+    Api.sendMessage({
+      text: emptyText,
+      parse_mode: "Markdown",
+      disable_web_page_preview: true,
+      reply_markup: { inline_keyboard: emptyInl }
+    });
   }
   return;
 }
