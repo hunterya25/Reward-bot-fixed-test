@@ -22,7 +22,10 @@ if (user.telegramid != adm) {
   return;
 }
 
-var wid = params ? params.trim() : "";
+var prms = params ? params.trim().split(" ") : [];
+var wid = prms[0] || "";
+var returnPage = prms[1] ? parseInt(prms[1]) : 1;
+
 if (!wid) {
   Bot.sendMessage("❌ Withdrawal ID missing!");
   return;
@@ -36,11 +39,17 @@ if (!withData) {
 
 if (withData.status == "Approved") {
   Bot.sendMessage("ℹ️ This withdrawal is already Approved!");
+  if (request.message && request.message.message_id && prms.length <= 1) {
+    Api.deleteMessage({ chat_id: adm, message_id: request.message.message_id });
+  }
   return;
 }
 
 if (withData.status == "Rejected") {
   Bot.sendMessage("⚠️ This withdrawal was already Rejected & refunded!");
+  if (request.message && request.message.message_id && prms.length <= 1) {
+    Api.deleteMessage({ chat_id: adm, message_id: request.message.message_id });
+  }
   return;
 }
 
@@ -77,19 +86,21 @@ var userMsg = "🎉 *Congratulations! Withdrawal Approved & Paid!* 🥳\n\n" +
 
 Bot.sendMessageToChatWithId(withData.user_id, userMsg, { parse_mode: "Markdown" });
 
-// Update Admin Message
-var updatedAdminText = "✅ *Withdrawal #" + wid + " Successfully Approved & Settled!*\n\n" +
-  "👤 *User:* [" + withData.first_name + "](tg://user?id=" + withData.user_id + ") (`" + withData.user_id + "`)\n" +
-  "💰 *Amount Paid:* ₹" + withData.amount + "\n" +
-  "🏦 *UPI ID:* `" + withData.upi + "`\n" +
-  "📅 *Approved At:* " + withData.approved_at;
+// 🗑 Auto-Delete the Separate Direct Withdrawal Message (Prevents Double-Pay)
+var sepMsgId = Bot.getProperty("WithMsg_" + wid);
+if (sepMsgId) {
+  Api.deleteMessage({ chat_id: adm, message_id: sepMsgId });
+  Bot.setProperty("WithMsg_" + wid, null);
+} else if (request.message && request.message.message_id && prms.length <= 1) {
+  Api.deleteMessage({ chat_id: adm, message_id: request.message.message_id });
+}
 
-if (request.message && request.message.message_id) {
-  Api.editMessageText({
-    message_id: request.message.message_id,
-    text: updatedAdminText,
-    parse_mode: "Markdown"
-  });
+// If clicked from Admin Panel, refresh the pending list
+var clickedFromPanel = prms.length > 1;
+if (clickedFromPanel) {
+  Bot.sendMessage("✅ *Withdrawal #" + wid + " (₹" + withData.amount + ") Approved & Paid!*", { parse_mode: "Markdown" });
+  Bot.runCommand("/with_requests " + returnPage);
 } else {
-  Bot.sendMessage(updatedAdminText, { parse_mode: "Markdown" });
+  // Clicked from separate message
+  Bot.sendMessage("✅ *Withdrawal #" + wid + " Successfully Approved & Paid!*\n\n💰 Amount: ₹" + withData.amount + "\n🏦 UPI: `" + withData.upi + "`", { parse_mode: "Markdown" });
 }

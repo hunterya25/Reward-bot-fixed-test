@@ -16,12 +16,17 @@
   group: 
 CMD*/
 
-var his = Bot.getProperty("history" + user.telegramid)
+var his = Bot.getProperty("history" + user.telegramid);
 if (!his) {
-  var hi = `*⚙️ Last 20 Transaction*
-✨ No Transaction found`
+  var hi = "*⚙️ Last 20 Transactions*\n✨ No Transactions found.";
 } else {
-  var hi = his
+  var hi = his;
 }
-Bot.sendMessage(hi)
+
+var inl = [
+  [{ text: "📜 Detailed Withdrawal Status & Tracking", callback_data: "/my_withdrawals 1" }],
+  [{ text: "💰 View Balance", callback_data: "/balance" }]
+];
+
+Bot.sendInlineKeyboard(inl, hi);
 

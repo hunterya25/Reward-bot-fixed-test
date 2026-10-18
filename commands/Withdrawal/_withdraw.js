@@ -83,6 +83,12 @@ if (!pendingW) { pendingW = []; }
 pendingW.push(wid);
 Bot.setProperty("PendingWithdrawals", pendingW, "json");
 
+// Add to User's Personal Withdrawals List (for Status Page)
+var userWithList = User.getProperty("UserWithdrawals", []);
+if (!userWithList) { userWithList = []; }
+userWithList.unshift(wid);
+User.setProperty("UserWithdrawals", userWithList, "json");
+
 // Log into user history
 var his = Bot.getProperty("history" + user.telegramid) || "";
 var newHis = "⏳ *Withdrawal Requested:*\n📅 Time: " + nowTime + "\n💰 Amount: ₹" + reqAmount.toFixed(2) + " to `" + upi + "`\n🆔 Status: Pending Review (#" + wid + ")\n\n" + his;
@@ -105,13 +111,14 @@ var adminText = "🔔 *New Withdrawal Request!* 🔔\n\n" +
   "📅 *Date & Time:* " + nowTime + "\n\n" +
   "⚡️ *Click an action below:*";
 
-// Send to Admin
+// Send to Admin with message_id capture
 if (adm) {
   Api.sendMessage({
     chat_id: adm,
     text: adminText,
     parse_mode: "Markdown",
-    reply_markup: { inline_keyboard: adminButtons }
+    reply_markup: { inline_keyboard: adminButtons },
+    on_result: "/save_with_msg " + wid
   });
 }
 

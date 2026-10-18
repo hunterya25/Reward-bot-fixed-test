@@ -42,23 +42,54 @@ if (!pendingW || pendingW.length == 0) {
   return;
 }
 
-var txt = "💸 *Pending Withdrawal Requests (" + pendingW.length + ")*\n\n";
+// 5 Requests Per Page Pagination
+var perPage = 5;
+var page = params ? parseInt(params) : 1;
+if (isNaN(page) || page < 1) { page = 1; }
+var totalPages = Math.ceil(pendingW.length / perPage);
+if (page > totalPages) { page = totalPages; }
+
+var startIndex = (page - 1) * perPage;
+var endIndex = Math.min(startIndex + perPage, pendingW.length);
+var pageItems = pendingW.slice(startIndex, endIndex);
+
+var txt = "💸 *Pending Withdrawal Requests (" + pendingW.length + " Total)*\n" +
+  "📄 *Page " + page + " of " + totalPages + "*\n\n";
+
 var inl = [];
 
-for (var i = 0; i < pendingW.length && i < 8; i++) {
-  var wid = pendingW[i];
+for (var i = 0; i < pageItems.length; i++) {
+  var wid = pageItems[i];
   var wData = Bot.getProperty("With_" + wid);
   if (wData) {
-    txt += "🔹 *#" + wid + "* ➔ ₹" + wData.amount + " | UPI: `" + wData.upi + "`\n";
+    var itemNo = startIndex + i + 1;
+    txt += "🔹 *" + itemNo + ". #" + wid + "* ➔ *₹" + wData.amount + "* | `" + wData.upi + "`\n";
     txt += "   👤 User: " + wData.first_name + " (`" + wData.user_id + "`)\n\n";
     inl.push([
-      { text: "✅ Pay ₹" + wData.amount + " (#" + wid + ")", callback_data: "/app_with " + wid },
-      { text: "❌ Reject", callback_data: "/rej_with " + wid }
+      { text: "✅ Pay ₹" + wData.amount + " (#" + wid + ")", callback_data: "/app_with " + wid + " " + page },
+      { text: "❌ Reject", callback_data: "/rej_with " + wid + " " + page }
     ]);
   }
 }
 
-inl.push([{ text: "🔄 Refresh", callback_data: "/with_requests" }, { text: "◀ Back To Panel", callback_data: "/admin" }]);
+// Pagination Controls Row
+var navRow = [];
+if (page > 1) {
+  navRow.push({ text: "◀️ Previous", callback_data: "/with_requests " + (page - 1) });
+}
+navRow.push({ text: "📄 " + page + "/" + totalPages, callback_data: "/with_requests " + page });
+if (page < totalPages) {
+  navRow.push({ text: "Next ▶️", callback_data: "/with_requests " + (page + 1) });
+}
+if (navRow.length > 0) {
+  inl.push(navRow);
+}
+
+// Bottom Actions Row
+inl.push([
+  { text: "🔄 Refresh", callback_data: "/with_requests " + page },
+  { text: "◀ Back To Panel", callback_data: "/admin" }
+]);
 
 if (mm) {
   Api.editMessageText({
