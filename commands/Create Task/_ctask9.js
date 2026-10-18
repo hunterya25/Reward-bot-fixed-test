@@ -14,19 +14,27 @@
 CMD*/
 
 function isNumeric(n) {
-  return !isNaN(parseFloat(n)) && isFinite(n)
+  return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
 if (!isNumeric(message)) {
-  Bot.sendMessage("❌ Send a Valid Number")
-  Bot.runCommand("/ctask9")
-  return
+  Bot.sendMessage("❌ *Please send a valid number!*", { parse_mode: "Markdown" });
+  Bot.runCommand("/ctask9");
+  return;
 }
-if (message < 10) {
-  Bot.sendMessage("*Enter Minimum 10 Task Claimer*")
-  Bot.runCommand("/ctask9")
-  return
-}
-User.setProperty("usertask1", message)
-Bot.runCommand("/ctask1")
 
+var val = parseInt(message);
+var minU = Bot.getProperty("MinTaskUsers", 10);
+var maxU = Bot.getProperty("MaxTaskUsers", 5000);
+
+if (val < minU || val > maxU) {
+  Bot.sendMessage(
+    "⚠️ *Invalid User Target!*\n\nYou must enter between *" + minU + "* and *" + maxU + "* users.",
+    { parse_mode: "Markdown" }
+  );
+  Bot.runCommand("/ctask9");
+  return;
+}
+
+User.setProperty("usertask1", val);
+Bot.runCommand("/ctask1");

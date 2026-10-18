@@ -45,11 +45,14 @@ var inl = [
     { text: "🛒 Task Moderation", callback_data: "/alltask#123 1" }
   ],
   [
-    { text: "📊 Bot Analytics", callback_data: "/bot_analytics" },
-    { text: "📢 Broadcast / Mass", callback_data: "/mass_setting" }
+    { text: "📋 Task Creation Limits", callback_data: "/task_limits" },
+    { text: "📊 Bot Analytics", callback_data: "/bot_analytics" }
   ],
   [
-    { text: "ℹ️ Bot Info & Support", callback_data: "/bot_info_settings" },
+    { text: "📢 Broadcast / Mass", callback_data: "/mass_setting" },
+    { text: "ℹ️ Bot Info & Support", callback_data: "/bot_info_settings" }
+  ],
+  [
     { text: "🔒 Log Out", callback_data: "/logout" }
   ]
 ];

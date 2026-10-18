@@ -39,8 +39,14 @@ if (user.telegramid == admin || user.telegramid == Bot.getProperty("adminID")) {
   Bot.setProperty("Task+" + b, jjson, "json")
 
   Api.sendMessage({
-    text: "✅ <b>" + b + "'s Demo Changed</>",
+    text: "✅ <b>" + b + "'s Demo Changed</b>",
     parse_mode: "html"
-  })
-} else return
+  });
+
+  if (user.telegramid == Bot.getProperty("adminID")) {
+    Bot.runCommand("/sttatt " + b);
+  } else {
+    Bot.runCommand("/sttat " + b);
+  }
+} else return;
 

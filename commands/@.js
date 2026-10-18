@@ -26,11 +26,23 @@ if (_bb_isBan == "ban" && user.telegramid != adm) {
   return;
 }
 
+var incomingText = (message || (request && request.message && request.message.text) || "").trim();
+var callbackData = (request && request.data ? request.data : "");
+
+// 🛠 Maintenance Enforcement (Only Support is allowed during maintenance!)
+var inSupport = User.getProperty("in_support");
+var isSupportCmd = (incomingText.toLowerCase() === "📞 support" || incomingText.indexOf("/support") === 0 || callbackData.indexOf("/support") === 0);
+
+if (isSupportCmd) {
+  User.setProperty("in_support", true, "boolean");
+}
+
 if (m == "✅") {
-  if (adm == user.telegramid) {
+  if (adm == user.telegramid || isSupportCmd || inSupport) {
+    // Permitted to communicate with Support during maintenance
   } else {
     Bot.sendMessage(
-      "*🛠 Maintenance In Progress!*\n\n_▪️ Bot Administration Does Some Technical Work Within This Bot.\n▪️ Due To This Reason, The Menu Was Deactivated By Administrators And Is Not Available At This Time.\n▪️ All Functionality Will Return After Completion Of Maintenance._\n\n*For The Users:*\n_ℹ️ You Can Come Back Later And Press /start To Check The Status Of The Bot._"
+      "*🛠 Maintenance In Progress!*\n\n_▪️ Bot Administration Does Some Technical Work Within This Bot.\n▪️ Due To This Reason, The Menu Was Deactivated By Administrators And Is Not Available At This Time.\n▪️ All Functionality Will Return After Completion Of Maintenance._\n\n*For The Users:*\n_ℹ️ You Can Contact Support (📞 Support) Or Press /start Later To Check Status._"
     );
     return;
   }
@@ -41,15 +53,12 @@ var reqChans = Bot.getProperty("RequiredChannels", []);
 if (!reqChans) { reqChans = []; }
 
 if (reqChans && reqChans.length > 0) {
-  var incomingText = (message || (request && request.message && request.message.text) || "");
-  var callbackData = (request && request.data ? request.data : "");
-
   var isStartCmd = incomingText.indexOf("/start") === 0;
   var isCheckCmd = incomingText.indexOf("/check_join") === 0 || callbackData.indexOf("/check_join") === 0 || callbackData.indexOf("/on_check_join") === 0;
   var isAdminCmd = incomingText.indexOf("/loginme") === 0 || incomingText.indexOf("/set_admin") === 0 || incomingText.indexOf("/admin") === 0;
   var isAdminUser = (user.telegramid == adm);
 
-  var isExempt = isAdminUser || isStartCmd || isCheckCmd || isAdminCmd;
+  var isExempt = isAdminUser || isStartCmd || isCheckCmd || isAdminCmd || isSupportCmd || inSupport;
 
   if (!isExempt) {
     var isChannelJoined = User.getProperty("channel_joined");
