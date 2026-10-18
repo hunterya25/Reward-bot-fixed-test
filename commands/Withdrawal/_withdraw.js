@@ -33,14 +33,7 @@ if (!isNumeric(message)) {
 
 var minWithdrawINR = 1; // Minimum ₹1 withdrawal
 
-// Check if User is Banned
-let isBan = Bot.getProperty("ban" + user.telegramid);
-if (isBan == "ban") {
-  Bot.sendMessage("*🚫 You're Banned From Using The Bot!* ❌");
-  return;
-}
-
-let balance = Libs.ResourcesLib.userRes("Available_For_Payout");
+var balance = Libs.ResourcesLib.userRes("Available_For_Payout");
 var upi = User.getProperty("upi_id");
 
 if (!upi) {

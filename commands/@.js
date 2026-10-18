@@ -20,8 +20,8 @@ var m = Bot.getProperty("maintenance")
 var adm = Bot.getProperty("adminID")
 
 // 🚫 Ban Enforcement
-var isBan = Bot.getProperty("ban" + user.telegramid)
-if (isBan == "ban" && user.telegramid != adm) {
+var _bb_isBan = Bot.getProperty("ban" + user.telegramid)
+if (_bb_isBan == "ban" && user.telegramid != adm) {
   Bot.sendMessage("*🚫 You are banned from using this bot!*\n\n_If you think this is a mistake, contact administration._")
   return
 }
