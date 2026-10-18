@@ -113,12 +113,14 @@ var adminText = "🔔 *New Withdrawal Request!* 🔔\n\n" +
 
 // Send to Admin with message_id capture
 if (adm) {
+  Bot.setProperty("LastCreatedWithID", wid);
   Api.sendMessage({
     chat_id: adm,
     text: adminText,
     parse_mode: "Markdown",
     reply_markup: { inline_keyboard: adminButtons },
-    on_result: "/save_with_msg " + wid
+    on_result: "/save_with_msg",
+    bb_options: { wid: wid }
   });
 }
 

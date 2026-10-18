@@ -37,19 +37,21 @@ if (!withData) {
   return;
 }
 
+var adminChatId = (chat && chat.chatid) ? chat.chatid : adm;
+
 if (withData.status == "Approved") {
-  Bot.sendMessage("⚠️ Cannot reject: This withdrawal was already Approved & Paid!");
   if (request.message && request.message.message_id && prms.length <= 1) {
-    Api.deleteMessage({ chat_id: adm, message_id: request.message.message_id });
+    Api.deleteMessage({ chat_id: adminChatId, message_id: request.message.message_id });
   }
+  Bot.sendMessage("⚠️ Cannot reject: This withdrawal was already Approved & Paid!");
   return;
 }
 
 if (withData.status == "Rejected") {
-  Bot.sendMessage("ℹ️ This withdrawal is already Rejected & Refunded.");
   if (request.message && request.message.message_id && prms.length <= 1) {
-    Api.deleteMessage({ chat_id: adm, message_id: request.message.message_id });
+    Api.deleteMessage({ chat_id: adminChatId, message_id: request.message.message_id });
   }
+  Bot.sendMessage("ℹ️ This withdrawal is already Rejected & Refunded.");
   return;
 }
 
@@ -88,12 +90,12 @@ var userMsg = "❌ *Withdrawal Request Notice*\n\n" +
 Bot.sendMessageToChatWithId(withData.user_id, userMsg, { parse_mode: "Markdown" });
 
 // 🗑 Auto-Delete the Separate Direct Withdrawal Message (Prevents Double-Pay)
-var sepMsgId = Bot.getProperty("WithMsg_" + wid);
-if (sepMsgId) {
-  Api.deleteMessage({ chat_id: adm, message_id: sepMsgId });
+var sepMsgId = (withData && withData.msg_id) ? withData.msg_id : Bot.getProperty("WithMsg_" + wid);
+if (sepMsgId && adminChatId) {
+  Api.deleteMessage({ chat_id: adminChatId, message_id: parseInt(sepMsgId) });
   Bot.setProperty("WithMsg_" + wid, null);
-} else if (request.message && request.message.message_id && prms.length <= 1) {
-  Api.deleteMessage({ chat_id: adm, message_id: request.message.message_id });
+} else if (request.message && request.message.message_id && prms.length <= 1 && adminChatId) {
+  Api.deleteMessage({ chat_id: adminChatId, message_id: request.message.message_id });
 }
 
 // If clicked from Admin Panel, refresh the pending list
