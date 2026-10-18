@@ -34,8 +34,11 @@ if (chName.length < 3) {
   return;
 }
 
-var reqChans = Bot.getProperty("RequiredChannels", ["@BotsByAntares"]);
+var reqChans = Bot.getProperty("RequiredChannels", []);
 if (!reqChans) { reqChans = []; }
+
+// filter out any lingering legacy @BotsByAntares if present
+reqChans = reqChans.filter(function(c) { return c && c !== "@BotsByAntares"; });
 
 if (reqChans.indexOf(chName) === -1) {
   reqChans.push(chName);

@@ -26,4 +26,12 @@ var cur = Bot.getProperty("Referral_status", "✅");
 var nxt = (cur === "✅") ? "❌" : "✅";
 Bot.setProperty("Referral_status", nxt, "string");
 
+if (request && request.id) {
+  Api.answerCallbackQuery({
+    callback_query_id: request.id,
+    text: "Referral Program switch is now " + nxt,
+    show_alert: false
+  });
+}
+
 Bot.runCommand("/ref_settings");

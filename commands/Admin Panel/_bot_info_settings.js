@@ -27,9 +27,12 @@ if (adm != user.telegramid) {
 var curUpi = Bot.getProperty("deposit_upi", "vipboy07@ybl");
 var curQr = Bot.getProperty("deposit_qr", "https://files.catbox.moe/by7c0i.jpg");
 var curSupport = Bot.getProperty("Support_user", "@vipboy07");
+var curBotUser = Bot.getProperty("bot_username", "backuppro123bot");
 
 var text = "ℹ️ *Bot Configuration & Deposit Receiving Setup*\n" +
   "• ━━━━━━━━━━━━━━━━━━━━ •\n\n" +
+  "🤖 *Bot Telegram Username:*\n" +
+  "`@" + curBotUser + "`\n\n" +
   "🏦 *Deposit Receiving UPI ID:*\n" +
   "`" + curUpi + "`\n\n" +
   "🖼 *Deposit QR Code Image Link:*\n" +
@@ -41,10 +44,11 @@ var text = "ℹ️ *Bot Configuration & Deposit Receiving Setup*\n" +
 
 var inl = [
   [
-    { text: "✏️ Set Deposit UPI ID", callback_data: "/set_deposit_upi" }
+    { text: "🤖 Set Bot Username (@" + curBotUser + ")", callback_data: "/set_bot_username" }
   ],
   [
-    { text: "✏️ Set Deposit QR Image URL", callback_data: "/set_deposit_qr" }
+    { text: "✏️ Set Deposit UPI ID", callback_data: "/set_deposit_upi" },
+    { text: "✏️ Set Deposit QR URL", callback_data: "/set_deposit_qr" }
   ],
   [
     { text: "✏️ Set Support Username", callback_data: "/set_support_user" }

@@ -16,6 +16,14 @@
   group: 
 CMD*/
 
+var tasksGate = Bot.getProperty("TasksSection_status", "✅");
+var adm = Bot.getProperty("adminID");
+
+if (tasksGate == "❌" && user.telegramid != adm) {
+  Bot.sendMessage("⛔️ *Tasks section is temporarily disabled by Administration.*\n\nPlease check back later or contact Support.");
+  return;
+}
+
 var ag = User.getProperty("taskagree")
 if (!ag) {
   var tto = `*👍 Read Our Agreement Then Click On Agree.*

@@ -26,4 +26,7 @@ var cur = Bot.getProperty("Deposit_status", "✅");
 var nxt = (cur === "✅") ? "❌" : "✅";
 Bot.setProperty("Deposit_status", nxt, "string");
 
+var statusLabel = (nxt === "✅") ? "🟢 ENABLED (Users can now deposit funds)" : "🔴 DISABLED (Users will receive instant disabled alert)";
+Bot.sendMessage("📥 *Deposit Gate is now " + statusLabel + "*", { parse_mode: "Markdown" });
+
 Bot.runCommand("/gate_settings");

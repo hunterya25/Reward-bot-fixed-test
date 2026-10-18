@@ -26,4 +26,7 @@ var cur = Bot.getProperty("Referral_status", "✅");
 var nxt = (cur === "✅") ? "❌" : "✅";
 Bot.setProperty("Referral_status", nxt, "string");
 
+var statusLabel = (nxt === "✅") ? "🟢 ENABLED (Referral earnings are active)" : "🔴 DISABLED (Referral program is paused)";
+Bot.sendMessage("🤝 *Referral Program Gate is now " + statusLabel + "*", { parse_mode: "Markdown" });
+
 Bot.runCommand("/gate_settings");

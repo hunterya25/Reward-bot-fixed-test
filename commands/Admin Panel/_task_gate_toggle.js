@@ -26,4 +26,7 @@ var cur = Bot.getProperty("TaskCreate_status", "✅");
 var nxt = (cur === "✅") ? "❌" : "✅";
 Bot.setProperty("TaskCreate_status", nxt, "string");
 
+var statusLabel = (nxt === "✅") ? "🟢 ENABLED (Users can publish tasks)" : "🔴 DISABLED (Users will receive instant disabled alert)";
+Bot.sendMessage("📋 *Task Creation Gate is now " + statusLabel + "*", { parse_mode: "Markdown" });
+
 Bot.runCommand("/gate_settings");

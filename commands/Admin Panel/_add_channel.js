@@ -21,7 +21,7 @@ var mm = User.getProperty("adminid");
 Api.editMessageText({
   message_id: mm,
   text: "📢 *Add New Mandatory Channel*\n\n" +
-    "👉 _Send the channel username with @ (e.g. `@BotsByAntares` or `@MyChannel`):_\n\n" +
+    "👉 _Send the channel username with @ (e.g. `@YourChannel` or `@MyNewsChannel`):_\n\n" +
     "⚠️ *Note:* Bot must be an Administrator in the channel with member viewing permissions!",
   parse_mode: "Markdown",
   reply_markup: {

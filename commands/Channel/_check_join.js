@@ -16,9 +16,16 @@
   group: 
 CMD*/
 
-var reqChannels = Bot.getProperty("RequiredChannels", ["@BotsByAntares"]);
+var reqChannels = Bot.getProperty("RequiredChannels", []);
+if (!reqChannels || (reqChannels.length === 1 && reqChannels[0] === "@BotsByAntares")) {
+  reqChannels = [];
+} else if (reqChannels && reqChannels.length > 0) {
+  reqChannels = reqChannels.filter(function(c) { return c && c !== "@BotsByAntares"; });
+}
 if (!reqChannels || reqChannels.length === 0) {
-  reqChannels = ["@BotsByAntares"];
+  User.setProperty("channel_joined", true, "boolean");
+  Bot.runCommand("/start");
+  return;
 }
 
 var targetChannel = reqChannels[0];

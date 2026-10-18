@@ -32,22 +32,41 @@ if (isJoined) {
     Api.deleteMessage({ chat_id: chat.chatid, message_id: request.message.message_id });
   }
 
-  Bot.sendMessage("🎉 *Verification Successful! Welcome to @" + bot.name + "* 🚀\n\n_You now have full access to all bot features._", { parse_mode: "Markdown" });
+  var activeBot = Bot.getProperty("bot_username") || (bot && bot.name) || "Bot";
+  activeBot = activeBot.replace("@", "");
+  Bot.sendMessage("🎉 *Verification Successful! Welcome to @" + activeBot + "* 🚀\n\n_You now have full access to all bot features._", { parse_mode: "Markdown" });
   Bot.runCommand("/start");
 } else {
   User.setProperty("channel_joined", false, "boolean");
 
-  var failText = "⚠️ *Channel Membership Required!*\n\n" +
-    "You have *NOT* joined our official channel yet, or you left it!\n\n" +
-    "📢 *Mandatory Channel:*\n" +
-    "👉 https://t.me/BotsByAntares (`@BotsByAntares`)\n\n" +
-    "🔔 *Rules:* You must remain in this channel. If you leave at any time in the future, bot access will be paused until you rejoin!\n\n" +
-    "👇 *Join the channel and click Verify below:*";
+  var reqChannels = Bot.getProperty("RequiredChannels", []);
+  if (!reqChannels || (reqChannels.length === 1 && reqChannels[0] === "@BotsByAntares")) {
+    reqChannels = [];
+  } else if (reqChannels && reqChannels.length > 0) {
+    reqChannels = reqChannels.filter(function(c) { return c && c !== "@BotsByAntares"; });
+  }
+  if (!reqChannels || reqChannels.length === 0) {
+    User.setProperty("channel_joined", true, "boolean");
+    Bot.runCommand("/start");
+    return;
+  }
 
-  var inl = [
-    [{ text: "📢 Join @BotsByAntares", url: "https://t.me/BotsByAntares" }],
-    [{ text: "✅ I Have Joined / Verify", callback_data: "/check_join" }]
-  ];
+  var chanListText = "";
+  var inl = [];
+  for (var i = 0; i < reqChannels.length; i++) {
+    var ch = reqChannels[i];
+    var chClean = ch.replace("@", "");
+    chanListText += "👉 [" + ch + "](https://t.me/" + chClean + ")\n";
+    inl.push([{ text: "📢 Join " + ch, url: "https://t.me/" + chClean }]);
+  }
+  inl.push([{ text: "✅ I Have Joined / Verify", callback_data: "/check_join" }]);
+
+  var failText = "⚠️ *Channel Membership Required!*\n\n" +
+    "You have *NOT* joined our official channel(s) yet, or you left!\n\n" +
+    "📢 *Mandatory Channel(s):*\n" +
+    chanListText + "\n" +
+    "🔔 *Rules:* You must remain in these channels. If you leave at any time in the future, bot access will be paused until you rejoin!\n\n" +
+    "👇 *Join and click Verify below:*";
 
   if (request.message && request.message.message_id) {
     Api.editMessageText({

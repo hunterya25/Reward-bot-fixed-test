@@ -24,14 +24,19 @@ if (adm != user.telegramid) {
   return;
 }
 
-var reqChans = Bot.getProperty("RequiredChannels", ["@BotsByAntares"]);
-if (!reqChans || reqChans.length === 0) {
-  reqChans = ["@BotsByAntares"];
+var reqChans = Bot.getProperty("RequiredChannels", []);
+if (!reqChans || (reqChans.length === 1 && reqChans[0] === "@BotsByAntares")) {
+  reqChans = [];
+  Bot.setProperty("RequiredChannels", [], "json");
 }
 
 var listStr = "";
-for (var i = 0; i < reqChans.length; i++) {
-  listStr += (i + 1) + ". `" + reqChans[i] + "`\n";
+if (reqChans.length === 0) {
+  listStr = "ℹ️ _No mandatory channels configured._\n🟢 *Force-Join is currently OFF.* All users can access the bot freely.\n";
+} else {
+  for (var i = 0; i < reqChans.length; i++) {
+    listStr += (i + 1) + ". `" + reqChans[i] + "`\n";
+  }
 }
 
 var text = "📢 *Mandatory Force-Join Channel Manager*\n" +
@@ -40,17 +45,20 @@ var text = "📢 *Mandatory Force-Join Channel Manager*\n" +
   "📋 *Active Required Channels (" + reqChans.length + "):*\n" +
   listStr + "\n" +
   "• ━━━━━━━━━━━━━━━━━━━━ •\n" +
-  "⚠️ _Important: Make sure @" + bot.name + " is added as an Administrator in each channel!_";
+  "⚠️ _Important: Make sure your bot is added as an Administrator in each channel!_";
 
 var inl = [
   [
-    { text: "➕ Add Required Channel", callback_data: "/add_channel" },
-    { text: "➖ Remove Channel", callback_data: "/rem_channel" }
-  ],
-  [
-    { text: "◀ Back To Panel", callback_data: "/admin" }
+    { text: "➕ Add Required Channel", callback_data: "/add_channel" }
   ]
 ];
+
+if (reqChans.length > 0) {
+  inl[0].push({ text: "➖ Remove Channel", callback_data: "/rem_channel" });
+  inl.push([{ text: "🗑 Clear All Channels", callback_data: "/rem_channel ALL" }]);
+}
+
+inl.push([{ text: "◀ Back To Panel", callback_data: "/admin" }]);
 
 if (mm) {
   Api.editMessageText({

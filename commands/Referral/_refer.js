@@ -16,6 +16,23 @@
   group: 
 CMD*/
 
+var refGate = Bot.getProperty("Referral_status", "✅");
+var adm = Bot.getProperty("adminID");
+
+if (refGate == "❌" && user.telegramid != adm) {
+  var offMsg = "⛔️ *Referral Program is temporarily paused by Administration.*\n\nPlease check back later or contact Support.";
+  if (request.message && request.message.message_id) {
+    Api.editMessageText({
+      message_id: request.message.message_id,
+      text: offMsg,
+      parse_mode: "Markdown"
+    });
+  } else {
+    Bot.sendMessage(offMsg, { parse_mode: "Markdown" });
+  }
+  return;
+}
+
 var refComm = Bot.getProperty("ReferralTaskCommission", 0.5);
 var myRefs = Bot.getProperty("UserReferrals_" + user.telegramid, []);
 if (!myRefs) { myRefs = []; }
@@ -30,8 +47,15 @@ for (var i = 0; i < myRefs.length; i++) {
   }
 }
 
-var refLink = "https://t.me/" + bot.name + "?start=" + user.telegramid;
-var shareText = encodeURIComponent("🚀 Join @" + bot.name + " and earn real UPI cash by completing easy tasks!\nJoin now: " + refLink);
+var botUser = Bot.getProperty("bot_username");
+if (!botUser) {
+  botUser = (bot && bot.name && !bot.name.includes(" ")) ? bot.name : "backuppro123bot";
+}
+botUser = botUser.replace("@", "").trim();
+
+var refLink = "https://t.me/" + botUser + "?start=" + user.telegramid;
+var shareText = encodeURIComponent("🚀 Complete easy tasks and earn real UPI cash!");
+var shareUrl = "https://t.me/share/url?url=" + encodeURIComponent(refLink) + "&text=" + shareText;
 
 var text = "🤝 *Refer & Earn Lifetime Program!* 💰\n" +
   "• ━━━━━━━━━━━━━━━━━━━━ •\n" +
@@ -46,7 +70,7 @@ var text = "🤝 *Refer & Earn Lifetime Program!* 💰\n" +
   "• ━━━━━━━━━━━━━━━━━━━━ •\n\n" +
   "🔗 *Your Exclusive Referral Link:*\n" +
   "`" + refLink + "`\n\n" +
-  "💡 _Share this link with your friends or in Telegram groups to maximize your passive earnings!_";
+  "💡 _Share this link with your friends to start earning passive income!_";
 
 var inl = [
   [
@@ -54,7 +78,7 @@ var inl = [
     { text: "📜 Earnings History", callback_data: "/ref_history 1" }
   ],
   [
-    { text: "📤 Share Referral Link", url: "https://t.me/share/url?url=" + encodeURIComponent(refLink) + "&text=" + shareText }
+    { text: "📤 Share Referral Link", url: shareUrl }
   ],
   [
     { text: "🔄 Refresh", callback_data: "/refer" }

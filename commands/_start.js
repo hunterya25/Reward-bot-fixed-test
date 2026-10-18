@@ -33,39 +33,63 @@ if (!already) {
 Bot.setProperty("Chat" + user.telegramid, chat, "json")
 var adm = Bot.getProperty("adminID");
 
-// 📢 Mandatory Channel Check on /start
-if (user.telegramid != adm && !User.getProperty("channel_joined")) {
-  var joinPrompt = "👋 *Welcome to @" + bot.name + "!* 🚀\n\n" +
+// Auto-detect Telegram Bot Username
+if (!Bot.getProperty("bot_username")) {
+  Api.getMe({ on_result: "/on_get_me" });
+}
+
+// Auto-clean old default Antares channel
+var reqChans = Bot.getProperty("RequiredChannels", []);
+if (!reqChans || (reqChans.length === 1 && reqChans[0] === "@BotsByAntares")) {
+  reqChans = [];
+  Bot.setProperty("RequiredChannels", [], "json");
+} else if (reqChans && reqChans.length > 0) {
+  var cleaned = reqChans.filter(function(c) { return c && c !== "@BotsByAntares"; });
+  if (cleaned.length !== reqChans.length) {
+    reqChans = cleaned;
+    Bot.setProperty("RequiredChannels", reqChans, "json");
+  }
+}
+if (reqChans && reqChans.length > 0 && user.telegramid != adm && !User.getProperty("channel_joined")) {
+  var chanListText = "";
+  var joinKeyboard = [];
+  for (var cj = 0; cj < reqChans.length; cj++) {
+    var cName = reqChans[cj];
+    var cClean = cName.replace("@", "");
+    chanListText += "👉 [" + cName + "](https://t.me/" + cClean + ")\n";
+    joinKeyboard.push([{ text: "📢 Join " + cName, url: "https://t.me/" + cClean }]);
+  }
+  joinKeyboard.push([{ text: "✅ I Have Joined / Verify", callback_data: "/check_join" }]);
+
+  var activeBotName = Bot.getProperty("bot_username") || (bot && bot.name) || "Bot";
+  activeBotName = activeBotName.replace("@", "");
+  var joinPrompt = "👋 *Welcome to @" + activeBotName + "!* 🚀\n\n" +
     "⚠️ *Mandatory Step To Start:*\n" +
-    "To use this bot and start earning UPI cash, you *MUST* join our official channel:\n" +
-    "📢 https://t.me/BotsByAntares (`@BotsByAntares`)\n\n" +
+    "To use this bot and start earning UPI cash, you *MUST* join our official channel(s):\n" +
+    chanListText + "\n" +
     "_If you leave the channel in the future, bot access will be paused until you rejoin!_\n\n" +
     "👇 *Please join now and click Verify below:*";
-
-  var joinKeyboard = [
-    [{ text: "📢 Join @BotsByAntares", url: "https://t.me/BotsByAntares" }],
-    [{ text: "✅ I Have Joined / Verify", callback_data: "/check_join" }]
-  ];
 
   Bot.sendInlineKeyboard(joinKeyboard, joinPrompt);
   return;
 }
 
-// Silently verify channel for existing users
-if (user.telegramid != adm) {
-  var reqChans = Bot.getProperty("RequiredChannels", ["@BotsByAntares"]);
-  var ch = (reqChans && reqChans.length > 0) ? reqChans[0] : "@BotsByAntares";
+// Silently verify channel for existing users if channels exist
+if (reqChans && reqChans.length > 0 && user.telegramid != adm) {
   Api.getChatMember({
-    chat_id: ch,
+    chat_id: reqChans[0],
     user_id: user.telegramid,
     on_result: "/on_check_join_silent"
   });
 }
 
+var currentBotName = Bot.getProperty("bot_username") || (bot && bot.name) || "Reward Boy";
+currentBotName = currentBotName.replace("@", "");
+
 Bot.sendKeyboard(
   "💰 Balance,🏟 My Tasks\n👨‍💻 Tasks,⚙️ Settings,🤑 Withdraw\n🤝 Refer & Earn,➕ Deposit\n📞 Support,📝How To Use\n📋 Create Task",
   "*👋 Hey, Welcome To @" +
-    bot.name +
+    currentBotName +
     " Task Manager !*\n\n⛅️ _You Can Complete Here Task And Earn UPI CASH And Here You Can Create A Task And Promote Your Social Platforms._\n\n*🐼 You Can Earn A Lot Of Money From Here Just Complete The Task..*"
 )
 

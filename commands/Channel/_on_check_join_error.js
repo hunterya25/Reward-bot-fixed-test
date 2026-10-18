@@ -21,8 +21,8 @@ var adm = Bot.getProperty("adminID");
 var errDesc = options && options.error ? options.error.description : "Unknown error";
 
 if (adm) {
-  Bot.sendMessageToChatWithId(adm, "⚠️ *Channel Verification Alert:*\nTelegram returned error while checking channel member: `" + errDesc + "`\n_Make sure your bot is an Administrator in @BotsByAntares with 'Add Members' right!_", { parse_mode: "Markdown" });
+  Bot.sendMessageToChatWithId(adm, "⚠️ *Channel Verification Alert:*\nTelegram returned error while checking channel member: `" + errDesc + "`\n_Make sure your bot is an Administrator in the required channels with 'Add Members' right!_", { parse_mode: "Markdown" });
 }
 
-// Allow user to proceed or prompt retry
-Bot.sendMessage("ℹ️ Please make sure you have joined https://t.me/BotsByAntares and try clicking Verify again in a few moments!");
+// Allow user to retry
+Bot.sendMessage("ℹ️ Please make sure you have joined all the required channels and try clicking Verify again in a few moments!");

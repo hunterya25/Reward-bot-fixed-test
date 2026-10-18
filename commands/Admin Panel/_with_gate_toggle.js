@@ -26,4 +26,7 @@ var cur = Bot.getProperty("Withdraw_status", "✅");
 var nxt = (cur === "✅") ? "❌" : "✅";
 Bot.setProperty("Withdraw_status", nxt, "string");
 
+var statusLabel = (nxt === "✅") ? "🟢 ENABLED (Users can now request payouts)" : "🔴 DISABLED (Users will receive instant disabled alert)";
+Bot.sendMessage("📤 *Withdrawal Gate is now " + statusLabel + "*", { parse_mode: "Markdown" });
+
 Bot.runCommand("/gate_settings");
