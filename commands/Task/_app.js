@@ -42,6 +42,63 @@ Api.sendMessage({
   parse_mode: "markdown",
   disable_web_page_preview: true
 })
+
+// 🤝 Process Referral Commission (0.5 RS per task completed by referred user)
+var refGate = Bot.getProperty("Referral_status", "✅");
+if (refGate != "❌") {
+  var refId = Bot.getProperty("UserReferrer_" + users);
+  if (refId && refId != users) {
+    var refComm = Bot.getProperty("ReferralTaskCommission", 0.5);
+
+    // Credit Referrer's Available_For_Payout balance
+    var refBal = Libs.ResourcesLib.anotherUserRes("Available_For_Payout", refId);
+    refBal.add(+refComm);
+
+    // Increment Referrer's Total Referral Earnings Resource
+    var refEarnRes = Libs.ResourcesLib.anotherUserRes("total_referral_earned", refId);
+    refEarnRes.add(+refComm);
+
+    // Fetch user details for notification & logging
+    var refereeChat = Bot.getProperty("Chat" + users);
+    var refereeName = refereeChat && refereeChat.user && refereeChat.user.first_name ? refereeChat.user.first_name : "Referred User";
+
+    var nowTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+
+    // Update referrer's referral list stats for this referee
+    var myRefs = Bot.getProperty("UserReferrals_" + refId, []);
+    if (myRefs && myRefs.length > 0) {
+      for (var r = 0; r < myRefs.length; r++) {
+        if (myRefs[r].id == users) {
+          myRefs[r].tasks_completed = (myRefs[r].tasks_completed || 0) + 1;
+          myRefs[r].total_earned = (myRefs[r].total_earned || 0) + refComm;
+          break;
+        }
+      }
+      Bot.setProperty("UserReferrals_" + refId, myRefs, "json");
+    }
+
+    // Add entry to Referrer's commission history
+    var refHistory = Bot.getProperty("ReferralHistory_" + refId, []);
+    if (!refHistory) { refHistory = []; }
+    refHistory.unshift({
+      referee_id: users,
+      referee_name: refereeName,
+      task_name: nam,
+      amount: refComm,
+      date: nowTime
+    });
+    Bot.setProperty("ReferralHistory_" + refId, refHistory, "json");
+
+    // Send instant notification to Referrer
+    var refMsg = "🎉 *Referral Commission Earned!* 🥳\n\n" +
+      "👤 Your referral *" + refereeName + "* (`" + users + "`) completed task *" + nam + "*!\n" +
+      "💰 *Commission Credited:* +₹" + refComm.toFixed(2) + "\n" +
+      "📊 *Available For Payout:* ₹" + refBal.value().toFixed(2) + "\n\n" +
+      "🚀 _Earnings from your referrals continue for lifetime!_";
+
+    Bot.sendMessageToChatWithId(refId, refMsg, { parse_mode: "Markdown" });
+  }
+}
 var tto = `*• ━━━━━━━━━━━━━━━━━ •
 » THE PAYMENT WAS SENT SUCCESSFULLY «*
 • ━━━━━━━━━━━━━━━━━ •

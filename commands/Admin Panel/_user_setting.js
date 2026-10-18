@@ -24,8 +24,13 @@ if (adm == user.telegramid) {
     bot.name +
     "*\n\n_⚠ Warning When Using This Panel Please Don't Send Any Other Command  or it May Spoil Your Work !_"
   var inl = [
-    [{ text: "👁 Check User Balance", callback_data: "/c_balance" }],
-    [{ text: "🗣 Add / Remove Balance", callback_data: "/bc_balance" }],
+    [
+      { text: "🔍 Deep User Dossier", callback_data: "/inspect_user" },
+      { text: "👁 Check Balance", callback_data: "/c_balance" }
+    ],
+    [
+      { text: "🗣 Add / Remove Balance", callback_data: "/bc_balance" }
+    ],
     [
       { text: "🚯 Ban User", callback_data: "/ban" },
       { text: "✅ Unban User", callback_data: "/unban" }

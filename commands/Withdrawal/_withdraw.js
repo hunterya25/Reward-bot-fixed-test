@@ -31,7 +31,9 @@ if (!isNumeric(message)) {
   return;
 }
 
-var minWithdrawINR = 1; // Minimum ₹1 withdrawal
+var minWithdrawINR = parseFloat(Bot.getProperty("MinWithdrawAmount", 1));
+var maxWithdrawINR = parseFloat(Bot.getProperty("MaxWithdrawAmount", 1000));
+var withTaxPercent = parseFloat(Bot.getProperty("WithdrawTaxPercent", 0));
 
 var balance = Libs.ResourcesLib.userRes("Available_For_Payout");
 var upi = User.getProperty("upi_id");
@@ -49,6 +51,11 @@ if (reqAmount < minWithdrawINR) {
   return;
 }
 
+if (reqAmount > maxWithdrawINR) {
+  Bot.sendMessage("⚠️ *Maximum Withdrawal limit is ₹" + maxWithdrawINR + ".*\n\nPlease enter an amount up to ₹" + maxWithdrawINR + ".");
+  return;
+}
+
 if (balance.value() < reqAmount) {
   Bot.sendMessage(
     "⚠️ *Insufficient Available Balance!*\n\n" +
@@ -57,6 +64,13 @@ if (balance.value() < reqAmount) {
   );
   return;
 }
+
+// Calculate Tax / Fee
+var taxAmt = 0;
+if (withTaxPercent > 0) {
+  taxAmt = (reqAmount * withTaxPercent) / 100;
+}
+var netPayout = reqAmount - taxAmt;
 
 // Deduct Balance from Available_For_Payout
 balance.remove(reqAmount);
@@ -70,6 +84,9 @@ var withRecord = {
   first_name: user.first_name,
   username: user.username || "",
   amount: reqAmount,
+  tax: taxAmt,
+  tax_percent: withTaxPercent,
+  net_amount: netPayout,
   upi: upi,
   status: "Pending",
   created_at: nowTime

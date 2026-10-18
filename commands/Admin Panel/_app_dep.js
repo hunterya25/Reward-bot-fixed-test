@@ -54,9 +54,16 @@ depData.status = "Approved";
 depData.approved_at = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
 Bot.setProperty("Deposit_" + did, depData, "json");
 
-// 💰 Credit user's Deposit Balance
+// 💰 Credit user's Deposit Balance (with Bonus if applicable)
+var depBonusPercent = parseFloat(Bot.getProperty("DepositBonusPercent", 0));
+var bonusAmt = 0;
+if (depBonusPercent > 0) {
+  bonusAmt = (creditAmount * depBonusPercent) / 100;
+}
+var totalCredit = creditAmount + bonusAmt;
+
 let bal = Libs.ResourcesLib.anotherUserRes("balance", depData.user_id);
-bal.add(+creditAmount);
+bal.add(+totalCredit);
 
 // Update Global Deposit Counter
 var totalDepRes = Libs.ResourcesLib.anotherChatRes("totaldeposit", "global");

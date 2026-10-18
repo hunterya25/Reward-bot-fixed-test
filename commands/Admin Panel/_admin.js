@@ -33,18 +33,26 @@ var inl = [
     { text: "📥 Deposits (" + pendingD + ")", callback_data: "/dep_requests" }
   ],
   [
-    { text: "👤 User Setting", callback_data: "/user_setting" },
-    { text: "📢 Mass Setting", callback_data: "/mass_setting" }
+    { text: "💰 Financial Settings", callback_data: "/fin_settings" },
+    { text: "🤝 Referral Settings", callback_data: "/ref_settings" }
   ],
   [
-    { text: "🛒 Task Moderation", callback_data: "/alltask#123 1" },
-    { text: "📊 Bot Analytics", callback_data: "/bot_analytics" }
+    { text: "📢 Channel Manager", callback_data: "/chan_settings" },
+    { text: "⚡️ System Switches", callback_data: "/gate_settings" }
   ],
   [
-    { text: "🤖 Bot Setting", callback_data: "/bot_setting" },
+    { text: "👤 User Management", callback_data: "/user_setting" },
+    { text: "🛒 Task Moderation", callback_data: "/alltask#123 1" }
+  ],
+  [
+    { text: "📊 Bot Analytics", callback_data: "/bot_analytics" },
+    { text: "📢 Broadcast / Mass", callback_data: "/mass_setting" }
+  ],
+  [
+    { text: "ℹ️ Bot Info & Support", callback_data: "/bot_info_settings" },
     { text: "🔒 Log Out", callback_data: "/logout" }
   ]
-]
+];
 
 var tto =
   "👋 *Welcome to the Administrator Control Center!*\n\n" +
