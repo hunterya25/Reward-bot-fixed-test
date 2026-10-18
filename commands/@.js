@@ -38,11 +38,7 @@ if (m == "✅") {
 
 // 📢 Mandatory Channel Force-Join Enforcement (Only if channels are configured by admin)
 var reqChans = Bot.getProperty("RequiredChannels", []);
-if (!reqChans || (reqChans.length === 1 && reqChans[0] === "@BotsByAntares")) {
-  reqChans = [];
-} else if (reqChans && reqChans.length > 0) {
-  reqChans = reqChans.filter(function(c) { return c && c !== "@BotsByAntares"; });
-}
+if (!reqChans) { reqChans = []; }
 
 if (reqChans && reqChans.length > 0) {
   var incomingText = (message || (request && request.message && request.message.text) || "");

@@ -58,18 +58,8 @@ if (rawRef) {
   }
 }
 
-// Auto-clean old default Antares channel
 var reqChans = Bot.getProperty("RequiredChannels", []);
-if (!reqChans || (reqChans.length === 1 && reqChans[0] === "@BotsByAntares")) {
-  reqChans = [];
-  Bot.setProperty("RequiredChannels", [], "json");
-} else if (reqChans && reqChans.length > 0) {
-  var cleaned = reqChans.filter(function(c) { return c && c !== "@BotsByAntares"; });
-  if (cleaned.length !== reqChans.length) {
-    reqChans = cleaned;
-    Bot.setProperty("RequiredChannels", reqChans, "json");
-  }
-}
+if (!reqChans) { reqChans = []; }
 
 // 📢 Mandatory Channel Force-Join Check
 var isJoined = User.getProperty("channel_joined");

@@ -17,7 +17,10 @@
 CMD*/
 
 if (!options || !options.result) {
-  Bot.sendMessage("⚠️ Unable to verify membership at this moment. Please try again.");
+  Api.sendMessage({
+    text: "⚠️ <b>Unable to verify membership at this moment.</b> Please try clicking Verify again in a few seconds.",
+    parse_mode: "html"
+  });
   return;
 }
 
@@ -25,39 +28,48 @@ var memberStatus = options.result.status;
 var isJoined = (memberStatus === "member" || memberStatus === "administrator" || memberStatus === "creator" || memberStatus === "restricted");
 
 var reqChannels = Bot.getProperty("RequiredChannels", []);
-if (!reqChannels || (reqChannels.length === 1 && reqChannels[0] === "@BotsByAntares")) {
-  reqChannels = [];
-} else if (reqChannels && reqChannels.length > 0) {
-  reqChannels = reqChannels.filter(function(c) { return c && c !== "@BotsByAntares"; });
+if (reqChannels && reqChannels.length > 0) {
+  reqChannels = reqChannels.filter(function(c) {
+    return c && c.toString().trim().length > 1;
+  });
 }
 
 if (isJoined) {
-  var curIdx = (options && options.channelIdx) ? options.channelIdx : 0;
+  var curIdx = User.getProperty("checking_channel_idx", 0);
+  if (isNaN(curIdx)) { curIdx = 0; }
   var nextIdx = curIdx + 1;
 
-  // If there are more channels to verify, check the next one
+  // If there are more channels in the list, verify the next channel
   if (reqChannels && nextIdx < reqChannels.length) {
-    Bot.run({
-      command: "/check_join",
-      options: { channelIdx: nextIdx }
-    });
+    Bot.runCommand("/check_join " + nextIdx);
     return;
   }
 
-  // All channels verified!
+  // All channels successfully verified!
   User.setProperty("channel_joined", true, "boolean");
+  User.setProperty("checking_channel_idx", 0, "integer");
   User.setProperty("last_channel_check", new Date().getTime(), "integer");
 
-  if (request.message && request.message.message_id) {
+  // Delete the join prompt message if available
+  if (request && request.message && request.message.message_id) {
     Api.deleteMessage({ chat_id: chat.chatid, message_id: request.message.message_id });
   }
 
   var activeBot = Bot.getProperty("bot_username") || (bot && bot.name) || "Bot";
   activeBot = activeBot.replace("@", "").trim();
-  Bot.sendMessage("🎉 <b>Verification Successful! Welcome to @" + activeBot + "</b> 🚀\n\n<i>You now have full access to all bot features.</i>", { parse_mode: "html" });
+
+  Api.sendMessage({
+    text: "🎉 <b>Verification Successful! Welcome to @" + activeBot + "</b> 🚀\n\n<i>You now have full access to all bot features.</i>",
+    parse_mode: "html"
+  });
+
   Bot.runCommand("/start");
 } else {
   User.setProperty("channel_joined", false, "boolean");
+
+  var curIdx = User.getProperty("checking_channel_idx", 0);
+  if (isNaN(curIdx)) { curIdx = 0; }
+  User.setProperty("checking_channel_idx", 0, "integer");
 
   if (!reqChannels || reqChannels.length === 0) {
     User.setProperty("channel_joined", true, "boolean");
@@ -75,14 +87,16 @@ if (isJoined) {
   }
   inl.push([{ text: "✅ I Have Joined / Verify", callback_data: "/check_join" }]);
 
+  var notJoinedChan = (reqChannels && reqChannels[curIdx]) ? reqChannels[curIdx] : "our channel";
+
   var failText = "⚠️ <b>Channel Membership Required!</b>\n\n" +
-    "You have <b>NOT</b> joined our official channel(s) yet, or you left!\n\n" +
+    "You have not joined <b>" + notJoinedChan + "</b> yet!\n\n" +
     "📢 <b>Mandatory Channel(s):</b>\n" +
     chanListText + "\n" +
-    "🔔 <b>Rules:</b> You must remain in these channels. If you leave at any time in the future, bot access will be paused until you rejoin!\n\n" +
+    "🔔 <b>Rules:</b> You must join all channels and remain in them to access the bot.\n\n" +
     "👇 <b>Please join and tap Verify below:</b>";
 
-  if (request.message && request.message.message_id) {
+  if (request && request.message && request.message.message_id) {
     Api.editMessageText({
       message_id: request.message.message_id,
       text: failText,
