@@ -12,7 +12,7 @@
   <<KEYBOARD
 
   KEYBOARD
-  aliases: /task
+  aliases: /task, tasks, Tasks, /tasks
   group: 
 CMD*/
 
@@ -24,70 +24,86 @@ if (tasksGate == "❌" && user.telegramid != adm) {
   return;
 }
 
-var ag = User.getProperty("taskagree")
+var ag = User.getProperty("taskagree");
 if (!ag) {
-  var tto = `*👍 Read Our Agreement Then Click On Agree.*
-  
-_1️⃣ Please Do The Tasks Honestly And To The Best Of Your Ability.
+  var tto = "*👍 Read Our Agreement Then Click On Agree.*\n\n" +
+    "_1️⃣ Please Do The Tasks Honestly And To The Best Of Your Ability.\n" +
+    "2️⃣ Once A Task Has Been Broadcasted It Can't Be Cancelled.\n" +
+    "3️⃣ Funds Deposited For Tasks Are Non Refundable.\n" +
+    "4️⃣ All Task Buyers Are Responsible To Check Completed Work.\n" +
+    "5️⃣ Tasks Are Auto Approved After 24 Hours._";
 
-2️⃣ Once A Task Has Been Broadcasted It Can't Be Cancelled.
-
-3️⃣ Funds Deposited For Tasks Are Non Refundable.
-
-4️⃣ All Task Buyers Are Resposible To Check Completed Work.
-
-5️⃣ Tasks Are Auto Approved After 24 Hours._`
-  Bot.sendInlineKeyboard([[{ title: "👍 Agree", command: "/agreeTask" }]], tto)
-  return
+  Api.sendMessage({
+    text: tto,
+    parse_mode: "Markdown",
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "👍 Agree", callback_data: "/agreeTask" }]
+      ]
+    }
+  });
+  return;
 }
-var codeList = Bot.getProperty("TaskJsonList")
-if (!codeList) {
-  Bot.sendMessage("*😔 No Task Available For Do*")
-  return
+
+var codeList = Bot.getProperty("TaskJsonList");
+if (!codeList || !Array.isArray(codeList) || codeList.length === 0) {
+  Bot.sendMessage("*😔 No Tasks Available Right Now.*", { parse_mode: "Markdown" });
+  return;
 }
+
+var tasksRendered = 0;
 
 for (var index in codeList) {
-  var name = codeList[index].name
+  var name = codeList[index].name;
+  if (!name) continue;
 
-  var bbi = Bot.getProperty("Task+" + name)
-  var nam = bbi.name
-  var des = bbi.des
-  var clm = bbi.claim
-  var rew = bbi.payment
-  var id = bbi.id
-  var demo = bbi.demo
-  var cat = bbi.cat
-  var link = bbi.link
+  var bbi = Bot.getProperty("Task+" + name);
+  if (!bbi) continue;
+
+  var stt = Bot.getProperty("Status?" + name, "On");
+  if (stt != "On") continue;
+
+  var nam = bbi.name || name;
+  var des = bbi.des || "No description";
+  var clm = bbi.claim || 0;
+  var rew = bbi.payment || 0;
+  var id = bbi.id;
+  var cat = bbi.cat;
+  var link = bbi.link || "";
+
+  var line = link;
   if (cat == "tg") {
-    var line = "https://t.me/" + link
+    line = "https://t.me/" + line.replace("@", "").trim();
   } else {
-    var line = link
+    if (!line.startsWith("http://") && !line.startsWith("https://") && !line.startsWith("tg://")) {
+      line = "https://" + line;
+    }
   }
-  var use = Libs.ResourcesLib.anotherChatRes("total_claimed", id).value()
-  var tol = clm - use
-  var to = tol
 
-  var ll =
-    "\n• ━━━━━━━━━━━━━━━━━ •\n🕰<b> Hurry Up Only</><code> " +
-    to +
-    "</><b> Can Complete This Task</>"
+  var use = Libs.ResourcesLib.anotherChatRes("total_claimed", id).value() || 0;
+  var tol = clm - use;
+  if (tol < 0) tol = 0;
 
   var ttxt =
-    "<b>🆔 Task ID:</> #" +
+    "<b>🆔 Task ID:</b> #" +
     id +
-    "\n• ━━━━━━━━━━━━━━━━━ •\n👁️<b> Task Title:</> " +
-    name +
-    "\n<b>📃 Description:</> <i>" +
+    "\n• ━━━━━━━━━━━━━━━━━ •\n" +
+    "👁️ <b>Task Title:</b> " +
+    nam +
+    "\n<b>📃 Description:</b> <i>" +
     des +
-    "</>\n<b>💲 Reward:</> " +
+    "</i>\n<b>💲 Reward:</b> " +
     rew +
-    " <b>₹RS\n👤 User:</> " +
+    " <b>₹Rs</b>\n" +
+    "👤 <b>Completions:</b> " +
     use +
-    "<b>/</>" +
+    " / " +
     clm +
-    "" +
-    ll +
-    "•"
+    "\n• ━━━━━━━━━━━━━━━━━ •\n" +
+    "🕰 <b>Hurry Up! Only <code>" +
+    tol +
+    "</code> spots left!</b>";
+
   var inl = [
     [
       { text: "↗️ Visit Now", url: line },
@@ -99,19 +115,25 @@ for (var index in codeList) {
         callback_data: "/ddemo " + nam
       }
     ]
-  ]
-  var cm = Bot.getProperty(name + "" + user.telegramid + "" + rew + "" + id)
-  var stt = Bot.getProperty("Status?" + name)
-  if (stt == "On") {
-    //   if (cm == true) {
-    // Bot.sendMessage("*✅ You Have Already Completed This Task* - " + name)
-    //   } else {
+  ];
+
+  try {
     Api.sendMessage({
       text: ttxt,
       parse_mode: "html",
+      disable_web_page_preview: true,
       reply_markup: { inline_keyboard: inl }
-    })
-    //  }
+    });
+    tasksRendered++;
+  } catch (err) {
+    Api.sendMessage({
+      text: "🆔 Task ID: #" + id + "\nTitle: " + nam + "\nReward: ₹" + rew + "\nUsers: " + use + "/" + clm,
+      reply_markup: { inline_keyboard: inl }
+    });
+    tasksRendered++;
   }
 }
 
+if (tasksRendered === 0) {
+  Bot.sendMessage("*😔 No Active Tasks Available Right Now.*", { parse_mode: "Markdown" });
+}

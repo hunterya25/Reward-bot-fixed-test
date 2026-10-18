@@ -34,11 +34,15 @@ if (user.telegramid != bbi.admin && user.telegramid != adm) {
   return;
 }
 
-var newLink = message.trim();
-if (newLink.length < 3) {
+var newLink = (message || "").trim();
+if (newLink.length < 2) {
   Bot.sendMessage("⚠️ *Please enter a valid link!*", { parse_mode: "Markdown" });
   Bot.runCommand("/elink2");
   return;
+}
+
+if (!newLink.startsWith("http://") && !newLink.startsWith("https://") && !newLink.startsWith("tg://") && !newLink.startsWith("@")) {
+  newLink = "https://" + newLink;
 }
 
 bbi.link = newLink;

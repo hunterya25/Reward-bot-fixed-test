@@ -16,6 +16,10 @@
   group: 
 CMD*/
 
-User.setProperty("promo_link", message)
-Bot.runCommand("/ctask9")
+var link = (message || "").trim();
+if (!link.startsWith("http://") && !link.startsWith("https://") && !link.startsWith("tg://")) {
+  link = "https://" + link;
+}
 
+User.setProperty("promo_link", link);
+Bot.runCommand("/ctask9");
