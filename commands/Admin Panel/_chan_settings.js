@@ -25,10 +25,10 @@ if (adm != user.telegramid) {
 }
 
 var reqChans = Bot.getProperty("RequiredChannels", []);
-if (!reqChans || (reqChans.length === 1 && reqChans[0] === "@BotsByAntares")) {
-  reqChans = [];
-  Bot.setProperty("RequiredChannels", [], "json");
-}
+if (!reqChans) { reqChans = []; }
+
+var dbChan = Bot.getProperty("StorageChannelID");
+var dbChanStr = dbChan ? "`" + dbChan + "`" : "_Not Configured_";
 
 var listStr = "";
 if (reqChans.length === 0) {
@@ -39,13 +39,15 @@ if (reqChans.length === 0) {
   }
 }
 
-var text = "📢 *Mandatory Force-Join Channel Manager*\n" +
+var text = "📢 *Channel & Storage Database Manager*\n" +
   "• ━━━━━━━━━━━━━━━━━━━━ •\n\n" +
-  "Users *MUST* join all channels listed here before using the bot. If they leave any of these channels in the future, their access is paused automatically until they rejoin!\n\n" +
-  "📋 *Active Required Channels (" + reqChans.length + "):*\n" +
+  "🗄 *Storage / Database Channel:* " + dbChanStr + "\n" +
+  "_(All task demo media, screenshots, and proof videos are backed up here!)_\n\n" +
+  "• ━━━━━━━━━━━━━━━━━━━━ •\n" +
+  "📋 *Mandatory Join Channels (" + reqChans.length + "):*\n" +
   listStr + "\n" +
   "• ━━━━━━━━━━━━━━━━━━━━ •\n" +
-  "⚠️ _Important: Make sure your bot is added as an Administrator in each channel!_";
+  "⚠️ _Important: Make sure your bot is an Administrator with all posting rights in all configured channels!_";
 
 var inl = [
   [
@@ -57,6 +59,10 @@ if (reqChans.length > 0) {
   inl[0].push({ text: "➖ Remove Channel", callback_data: "/rem_channel" });
   inl.push([{ text: "🗑 Clear All Channels", callback_data: "/rem_channel ALL" }]);
 }
+
+inl.push([
+  { text: "🗄 Database / Storage Channel", callback_data: "/set_db_chan" }
+]);
 
 inl.push([{ text: "◀ Back To Panel", callback_data: "/admin" }]);
 

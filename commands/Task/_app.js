@@ -106,6 +106,18 @@ var tto = `*• ━━━━━━━━━━━━━━━━━ •
 • ━━━━━━━━━━━━━━━━━ •`
 Bot.sendMessage(tto)
 Bot.setProperty(nam + "" + users + "" + rew + "" + id, true)
+
+// 🗄 Log Approval to Storage Channel if configured
+var dbChan = Bot.getProperty("StorageChannelID");
+if (dbChan) {
+  try {
+    Api.sendMessage({
+      chat_id: dbChan,
+      text: "✅ <b>#TASK_PROOF_APPROVED</b>\n━━━━━━━━━━━━━━━━━━\n🆔 <b>Task ID:</b> #" + id + "\n📌 <b>Task:</b> " + nam + "\n🧑‍💻 <b>Worker:</b> <code>" + users + "</code>\n💰 <b>Paid:</b> ₹" + rew + "\n👑 <b>Owner:</b> <code>" + admin + "</code>",
+      parse_mode: "html"
+    });
+  } catch (e) {}
+}
 var use = Libs.ResourcesLib.anotherChatRes("total_claimed", id)
 use.add(1)
 if (use.value() == clm) {

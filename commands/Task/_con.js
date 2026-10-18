@@ -20,6 +20,11 @@ Api.deleteMessage({ message_id: request.message.message_id })
 var oke = Bot.getProperty(params)
 let idia = oke.split("#-#-#")
 
+var demoList = Bot.getProperty(params + "_demoList");
+if (!demoList || !Array.isArray(demoList) || demoList.length == 0) {
+  demoList = [{ type: "photo", file_id: idia[6] }];
+}
+
 var json4 = {
   claim: idia[0],
   name: idia[1],
@@ -28,6 +33,7 @@ var json4 = {
   admin: idia[4],
   id: idia[5],
   demo: idia[6],
+  demoMedia: demoList,
   cat: idia[7],
   link: idia[8]
 }
@@ -50,6 +56,7 @@ times.add(1)
 
 Bot.setProperty("Name" + times.value(), a2, "string")
 Bot.setProperty("Task+" + a2, json4, "json")
+Bot.setProperty("TaskDemo_" + a2, demoList, "json")
 
 var bost = Libs.ResourcesLib.anotherChatRes("TotalAddedTasks", a1)
 
@@ -64,6 +71,51 @@ Bot.setProperty("Tasks" + a1, arr, "json")
 Bot.sendMessage(
   "*✅ Your Task Has Been Published.*\n_ In The Task List, Wait For Members To Carry Out Your Activity And Offer Earnings For Completing It Correctly._"
 )
+
+// 🗄 Backup Task Demo & Metadata to Storage Channel if configured
+var dbChan = Bot.getProperty("StorageChannelID");
+if (dbChan) {
+  var bTxt = "📁 <b>#NEW_TASK_PUBLISHED</b>\n" +
+    "━━━━━━━━━━━━━━━━━━\n" +
+    "🆔 <b>Task ID:</b> #" + idia[5] + "\n" +
+    "📌 <b>Title:</b> " + a2 + "\n" +
+    "👤 <b>Creator:</b> <code>" + a1 + "</code>\n" +
+    "💰 <b>Reward:</b> ₹" + idia[2] + "\n" +
+    "👥 <b>Target Users:</b> " + idia[0] + "\n" +
+    "🔗 <b>Link:</b> " + (idia[7] == "tg" ? "@" + idia[8] : idia[8]) + "\n" +
+    "📝 <b>Description:</b>\n" + idia[3] + "\n" +
+    "━━━━━━━━━━━━━━━━━━\n" +
+    "📸 <i>Attached Demo Media (" + demoList.length + " item(s))</i>";
+
+  try {
+    if (demoList.length == 1) {
+      if (demoList[0].type == "video") {
+        Api.sendVideo({ chat_id: dbChan, video: demoList[0].file_id, caption: bTxt, parse_mode: "html" });
+      } else {
+        Api.sendPhoto({ chat_id: dbChan, photo: demoList[0].file_id, caption: bTxt, parse_mode: "html" });
+      }
+    } else if (demoList.length > 1) {
+      var mg = [];
+      for (var k = 0; k < demoList.length && k < 10; k++) {
+        var itm = {
+          type: demoList[k].type == "video" ? "video" : "photo",
+          media: demoList[k].file_id
+        };
+        if (k == 0) {
+          itm.caption = bTxt;
+          itm.parse_mode = "html";
+        }
+        mg.push(itm);
+      }
+      Api.sendMediaGroup({ chat_id: dbChan, media: mg });
+    } else {
+      Api.sendMessage({ chat_id: dbChan, text: bTxt, parse_mode: "html" });
+    }
+  } catch (err) {
+    // Ignore channel permission errors
+  }
+}
+
 var fullBotUsers = Bot.getProperty("wholeUsers")
 for (var index in fullBotUsers) {
   var info = fullBotUsers[index]
@@ -80,4 +132,3 @@ for (var index in fullBotUsers) {
     //   return
   }
 }
-

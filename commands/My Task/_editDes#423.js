@@ -22,7 +22,12 @@ var clm = bbi.claim
 var rew = bbi.payment
 var id = bbi.id
 var demo = bbi.demo
-var admin = bbi.admin
+if (message.length > 4000) {
+  Bot.sendMessage("⚠️ *Description is too long!* Telegram allows up to 4000 characters. Your text is " + message.length + " characters.");
+  Bot.runCommand("/editDes#423");
+  return;
+}
+
 if (user.telegramid == admin || user.telegramid == Bot.getProperty("adminID")) {
   var jjson = {
     claim: clm,

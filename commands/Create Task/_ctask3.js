@@ -48,5 +48,6 @@ if (userBal < totalCost) {
   return;
 }
 
+User.setProperty("task_demo_media_list", [], "json");
 User.setProperty("usertask4", val);
 Bot.runCommand("/ctask4");
