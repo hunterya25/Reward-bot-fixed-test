@@ -79,13 +79,17 @@ var newHis = "❌ *Withdrawal Rejected & Refunded:*\n📅 Time: " + withData.rej
 Bot.setProperty("history" + withData.user_id, newHis);
 
 // Notify User
+var isCrypto = (withData.method === "USDT");
+var reasonNote = isCrypto
+  ? "ℹ️ *Common Reasons:* Incompatible or invalid BEP20 address, or invalid network.\nPlease update your USDT address in ⚙️ *Settings* ➔ *Wallet* or contact 📞 *Support*."
+  : "ℹ️ *Common Reasons:* Incorrect UPI ID, inactive UPI account, or invalid details.\nPlease update your UPI in ⚙️ *Settings* ➔ *Wallet* or contact 📞 *Support*.";
+
 var userMsg = "❌ *Withdrawal Request Notice*\n\n" +
   "Your withdrawal request of *₹" + withData.amount + "* has been *Rejected*.\n\n" +
   "💰 *Full Refund Processed:*\n" +
   "₹" + withData.amount + " has been returned to your *Available For Payout* balance.\n" +
   "📊 *Current Payout Balance:* ₹" + bal.value().toFixed(2) + "\n\n" +
-  "ℹ️ *Common Reasons:* Incorrect UPI ID, inactive UPI account, or invalid details.\n" +
-  "Please update your UPI in ⚙️ *Settings* or contact 📞 *Support*.";
+  reasonNote;
 
 Bot.sendMessageToChatWithId(withData.user_id, userMsg, { parse_mode: "Markdown" });
 

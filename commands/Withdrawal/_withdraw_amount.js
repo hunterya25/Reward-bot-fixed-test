@@ -24,17 +24,33 @@ if (wit == "❌" && user.telegramid != adm) {
   return;
 }
 
+var inputMsg = (message || "").trim();
+
+if (inputMsg.toLowerCase() === "/cancel" || inputMsg.toLowerCase() === "cancel") {
+  User.deleteProperty("temp_withdraw_data");
+  User.deleteProperty("current_with_method");
+  Bot.sendMessage("❌ *Withdrawal request cancelled.*");
+  return;
+}
+
 function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-if (!isNumeric(message)) {
-  Bot.sendMessage("❌ *Invalid input! Please send a valid numeric amount.*");
-  Bot.runCommand("/withdraw");
+if (!isNumeric(inputMsg)) {
+  var retryInl = [
+    [{ text: "❌ Cancel Withdrawal", callback_data: "/cancel_with" }]
+  ];
+  Api.sendMessage({
+    text: "❌ *Invalid amount! Please enter a valid numeric value* (e.g. 50 or 100):\n\n_(Or tap Cancel below)_",
+    parse_mode: "Markdown",
+    reply_markup: { inline_keyboard: retryInl }
+  });
+  Bot.runCommand("/withdraw_amount");
   return;
 }
 
-var reqAmount = parseFloat(message);
+var reqAmount = parseFloat(inputMsg);
 var method = User.getProperty("current_with_method", "upi");
 var balance = Libs.ResourcesLib.userRes("Available_For_Payout");
 var withTaxPercent = parseFloat(Bot.getProperty("WithdrawTaxPercent", 0));
@@ -69,35 +85,68 @@ if (isCrypto) {
 }
 
 if (reqAmount < minLimitINR) {
-  if (isCrypto) {
-    var minU = parseFloat(Bot.getProperty("MinWithdrawUSDT", 1));
-    Bot.sendMessage("⚠️ *Minimum Withdrawal is " + minU + " USDT (~₹" + minLimitINR.toFixed(2) + ").*\n\n💰 *Your Available Balance:* ₹" + balance.value().toFixed(2));
-  } else {
-    Bot.sendMessage("⚠️ *Minimum Withdrawal is ₹" + minLimitINR + ".*\n\n💰 *Your Available Balance:* ₹" + balance.value().toFixed(2));
-  }
+  var minLimitDesc = isCrypto
+    ? parseFloat(Bot.getProperty("MinWithdrawUSDT", 1)) + " USDT (~₹" + minLimitINR.toFixed(2) + ")"
+    : "₹" + minLimitINR;
+
+  var errInlMin = [
+    [{ text: "🔄 Enter Different Amount", callback_data: "/withdraw_method " + method }],
+    [{ text: "❌ Cancel Withdrawal", callback_data: "/cancel_with" }]
+  ];
+
+  Api.sendMessage({
+    text: "⚠️ *Amount is below minimum limit!*\n\n" +
+      "▫️ *Minimum Withdrawal:* `" + minLimitDesc + "`\n" +
+      "💰 *Your Available Balance:* `₹" + balance.value().toFixed(2) + "`\n\n" +
+      "👉 *Please enter a valid amount:*",
+    parse_mode: "Markdown",
+    reply_markup: { inline_keyboard: errInlMin }
+  });
+  Bot.runCommand("/withdraw_amount");
   return;
 }
 
 if (reqAmount > maxLimitINR) {
-  if (isCrypto) {
-    var maxU = parseFloat(Bot.getProperty("MaxWithdrawUSDT", 100));
-    Bot.sendMessage("⚠️ *Maximum Withdrawal limit is " + maxU + " USDT (~₹" + maxLimitINR.toFixed(2) + ").*");
-  } else {
-    Bot.sendMessage("⚠️ *Maximum Withdrawal limit is ₹" + maxLimitINR + ".*");
-  }
+  var maxLimitDesc = isCrypto
+    ? parseFloat(Bot.getProperty("MaxWithdrawUSDT", 100)) + " USDT (~₹" + maxLimitINR.toFixed(2) + ")"
+    : "₹" + maxLimitINR;
+
+  var errInlMax = [
+    [{ text: "🔄 Enter Different Amount", callback_data: "/withdraw_method " + method }],
+    [{ text: "❌ Cancel Withdrawal", callback_data: "/cancel_with" }]
+  ];
+
+  Api.sendMessage({
+    text: "⚠️ *Amount exceeds maximum limit!*\n\n" +
+      "▫️ *Maximum Withdrawal:* `" + maxLimitDesc + "`\n" +
+      "💰 *Your Available Balance:* `₹" + balance.value().toFixed(2) + "`\n\n" +
+      "👉 *Please enter a smaller amount:*",
+    parse_mode: "Markdown",
+    reply_markup: { inline_keyboard: errInlMax }
+  });
+  Bot.runCommand("/withdraw_amount");
   return;
 }
 
 if (balance.value() < reqAmount) {
-  Bot.sendMessage(
-    "⚠️ *Insufficient Available Balance!*\n\n" +
-    "Requested: ₹" + reqAmount.toFixed(2) + "\n" +
-    "💰 *Available for Payout:* ₹" + balance.value().toFixed(2)
-  );
+  var lowBalInl = [
+    [{ text: "🔄 Enter Different Amount", callback_data: "/withdraw_method " + method }],
+    [{ text: "❌ Cancel Withdrawal", callback_data: "/cancel_with" }]
+  ];
+
+  Api.sendMessage({
+    text: "⚠️ *Insufficient Available Balance!*\n\n" +
+      "▫️ *Requested:* `₹" + reqAmount.toFixed(2) + "`\n" +
+      "💰 *Available for Payout:* `₹" + balance.value().toFixed(2) + "`\n\n" +
+      "👉 *Please enter an amount within your balance:*",
+    parse_mode: "Markdown",
+    reply_markup: { inline_keyboard: lowBalInl }
+  });
+  Bot.runCommand("/withdraw_amount");
   return;
 }
 
-// Calculate Tax / Fee
+// Calculate Platform Fee / Tax
 var taxAmt = 0;
 if (withTaxPercent > 0) {
   taxAmt = (reqAmount * withTaxPercent) / 100;
@@ -105,17 +154,8 @@ if (withTaxPercent > 0) {
 var netPayoutINR = reqAmount - taxAmt;
 var netUSDT = isCrypto ? (netPayoutINR / usdtRate).toFixed(4) : null;
 
-// Deduct Balance from Available_For_Payout
-balance.remove(reqAmount);
-
-var wid = Libs.Random.randomInt(100000, 999999).toString();
-var nowTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
-
-var withRecord = {
-  id: wid,
-  user_id: user.telegramid,
-  first_name: user.first_name,
-  username: user.username || "",
+// Save temporary unconfirmed withdrawal draft (DO NOT deduct balance yet!)
+var tempWithData = {
   method: isCrypto ? "USDT" : "UPI",
   amount: reqAmount,
   tax: taxAmt,
@@ -125,107 +165,67 @@ var withRecord = {
   usdt_amount: netUSDT,
   crypto_address: isCrypto ? usdt : null,
   network: isCrypto ? "Binance Smart Chain (BEP20)" : null,
-  upi: payoutDestination,
-  status: "Pending",
-  created_at: nowTime
+  upi: isCrypto ? null : upi,
+  destination: payoutDestination,
+  created_at: Date.now()
 };
 
-Bot.setProperty("With_" + wid, withRecord, "json");
+User.setProperty("temp_withdraw_data", tempWithData, "json");
 
-// Add to Global Pending Withdrawals List
-var pendingW = Bot.getProperty("PendingWithdrawals", []);
-if (!pendingW) { pendingW = []; }
-pendingW.push(wid);
-Bot.setProperty("PendingWithdrawals", pendingW, "json");
-
-// Add to User's Personal Withdrawals List
-var userWithList = User.getProperty("UserWithdrawals", []);
-if (!userWithList) { userWithList = []; }
-userWithList.unshift(wid);
-User.setProperty("UserWithdrawals", userWithList, "json");
-
-// Log into user history
-var his = Bot.getProperty("history" + user.telegramid) || "";
-var historyDetails = isCrypto
-  ? (netUSDT + " USDT (₹" + reqAmount.toFixed(2) + ") to `" + usdt + "`")
-  : ("₹" + reqAmount.toFixed(2) + " to `" + upi + "`");
-
-var newHis = "⏳ *Withdrawal Requested:*\n📅 Time: " + nowTime + "\n💰 " + historyDetails + "\n🆔 Status: Pending Review (#" + wid + ")\n\n" + his;
-Bot.setProperty("history" + user.telegramid, newHis);
-
-// Interactive Buttons for Admin
-var adminButtons = [
+var confirmInl = [
   [
-    { text: "✅ Approve Payout", callback_data: "/app_with " + wid },
-    { text: "❌ Reject & Refund", callback_data: "/rej_with " + wid }
+    { text: "✅ Confirm & Submit", callback_data: "/confirm_with" },
+    { text: "❌ Cancel", callback_data: "/cancel_with" }
   ]
 ];
 
-var taxAdminText = withTaxPercent > 0 ? "\n📉 *Fee (" + withTaxPercent + "%):* ₹" + taxAmt.toFixed(2) : "";
-
-var adminText = "";
 if (isCrypto) {
-  adminText = "🔔 *New USDT (BEP20) Withdrawal Request!* 💎\n\n" +
-    "👤 *User:* [" + user.first_name + "](tg://user?id=" + user.telegramid + ")\n" +
-    "🆔 *User ID:* `" + user.telegramid + "`\n" +
-    "💎 *Method:* USDT (BEP20 / BSC)\n" +
-    "💰 *Amount in INR:* ₹" + reqAmount.toFixed(2) + taxAdminText + "\n" +
-    "💎 *Net USDT to Send:* `" + netUSDT + " USDT`\n" +
-    "📊 *Exchange Rate:* 1 USDT = ₹" + usdtRate.toFixed(2) + "\n" +
-    "📁 *BEP20 Address:* `" + usdt + "`\n" +
-    "🌐 *Network:* Binance Smart Chain (BEP20)\n" +
-    "🆔 *Request ID:* #" + wid + "\n" +
-    "📅 *Date & Time:* " + nowTime + "\n\n" +
-    "⚡️ *Click an action below:*";
-} else {
-  adminText = "🔔 *New UPI Withdrawal Request!* 🇮🇳\n\n" +
-    "👤 *User:* [" + user.first_name + "](tg://user?id=" + user.telegramid + ")\n" +
-    "🆔 *User ID:* `" + user.telegramid + "`\n" +
-    "💰 *Amount:* ₹" + reqAmount.toFixed(2) + taxAdminText + "\n" +
-    "💵 *Net Payout:* ₹" + netPayoutINR.toFixed(2) + "\n" +
-    "🏦 *UPI ID:* `" + upi + "`\n" +
-    "🆔 *Request ID:* #" + wid + "\n" +
-    "📅 *Date & Time:* " + nowTime + "\n\n" +
-    "⚡️ *Click an action below:*";
-}
+  var taxNoticeCrypto = withTaxPercent > 0 ? "▫️ *Platform Fee / Tax (" + withTaxPercent + "%):* `-₹" + taxAmt.toFixed(2) + "`\n" : "";
 
-// Send to Admin
-if (adm) {
-  Bot.setProperty("LastCreatedWithID", wid);
+  var verifyTextUSDT = "📋 *Crypto Withdrawal Verification & Confirmation*\n" +
+    "• ━━━━━━━━━━━━━━━━━━━━ •\n" +
+    "🔍 *Please review your USDT payout details carefully:*\n\n" +
+    "💎 *Payment Method:* USDT (BEP20 / BSC)\n" +
+    "📁 *Receiving BEP20 Address:*\n`" + usdt + "`\n" +
+    "🌐 *Network:* Binance Smart Chain (BEP20)\n" +
+    "💰 *Amount in INR:* `₹" + reqAmount.toFixed(2) + "`\n" +
+    "📊 *Exchange Rate:* `1 USDT = ₹" + usdtRate.toFixed(2) + "`\n" +
+    taxNoticeCrypto +
+    "💎 *Final Net USDT to Receive:* *" + netUSDT + " USDT*\n" +
+    "• ━━━━━━━━━━━━━━━━━━━━ •\n" +
+    "⚠️ *STRICT WARNING:*\n" +
+    "• Payment will be sent via **Binance Smart Chain (BEP20)** only!\n" +
+    "• Do NOT use addresses from TRC20, ERC20, Polygon, or other incompatible networks.\n" +
+    "• If you provide an incorrect or non-BEP20 address, *funds will be permanently lost and we are NOT responsible!*\n" +
+    "• ━━━━━━━━━━━━━━━━━━━━ •\n\n" +
+    "👉 *Tap 'Confirm & Submit' to proceed, or 'Cancel' to abort:*";
+
   Api.sendMessage({
-    chat_id: adm,
-    text: adminText,
+    text: verifyTextUSDT,
     parse_mode: "Markdown",
-    reply_markup: { inline_keyboard: adminButtons },
-    on_result: "/save_with_msg",
-    bb_options: { wid: wid }
+    reply_markup: { inline_keyboard: confirmInl }
   });
-}
-
-// User Confirmation Message
-if (isCrypto) {
-  var taxNotice = withTaxPercent > 0 ? "\n📉 *Fee (" + withTaxPercent + "%):* -₹" + taxAmt.toFixed(2) : "";
-  Bot.sendMessage(
-    "✅ *USDT Withdrawal Request Submitted!* 🚀\n\n" +
-    "💎 *USDT to Receive:* `" + netUSDT + " USDT`\n" +
-    "💰 *Amount in INR:* ₹" + reqAmount.toFixed(2) + taxNotice + "\n" +
-    "📊 *Exchange Rate:* 1 USDT = ₹" + usdtRate.toFixed(2) + "\n" +
-    "📁 *BEP20 Wallet Address:*\n`" + usdt + "`\n" +
-    "🌐 *Network:* Binance Smart Chain (BEP20)\n" +
-    "🆔 *Request ID:* #" + wid + "\n" +
-    "⏳ *Processing Time:* 1 to 4 Hours\n\n" +
-    "🔔 *You will receive an automatic notification once approved!*",
-    { parse_mode: "Markdown" }
-  );
 } else {
-  var taxUserNotice = withTaxPercent > 0 ? "\n📉 *Fee (" + withTaxPercent + "%):* -₹" + taxAmt.toFixed(2) + "\n💵 *Net Payout:* ₹" + netPayoutINR.toFixed(2) : "";
-  Bot.sendMessage(
-    "✅ *Withdrawal Request Submitted Successfully!* 🚀\n\n" +
-    "💰 *Amount Requested:* ₹" + reqAmount.toFixed(2) + taxUserNotice + "\n" +
-    "🏦 *UPI Address:* `" + upi + "`\n" +
-    "🆔 *Request ID:* #" + wid + "\n" +
-    "⏳ *Processing Time:* 1 to 4 Hours\n\n" +
-    "🔔 *You will receive an automatic notification once approved!*",
-    { parse_mode: "Markdown" }
-  );
+  var taxNoticeUPI = withTaxPercent > 0 ? "▫️ *Platform Fee / Tax (" + withTaxPercent + "%):* `-₹" + taxAmt.toFixed(2) + "`\n" : "";
+
+  var verifyTextUPI = "📋 *Withdrawal Verification & Confirmation*\n" +
+    "• ━━━━━━━━━━━━━━━━━━━━ •\n" +
+    "🔍 *Please review your UPI payout details carefully:*\n\n" +
+    "💳 *Payment Method:* 🇮🇳 UPI Transfer\n" +
+    "🏦 *Receiving UPI ID:* `" + upi + "`\n" +
+    "💰 *Withdrawal Amount:* `₹" + reqAmount.toFixed(2) + "`\n" +
+    taxNoticeUPI +
+    "💵 *Final Net Payout:* *₹" + netPayoutINR.toFixed(2) + "*\n" +
+    "• ━━━━━━━━━━━━━━━━━━━━ •\n" +
+    "⚠️ *Attention:*\n" +
+    "• Please verify your UPI ID is active and correctly spelled.\n" +
+    "• Payments sent to incorrect UPI IDs cannot be reversed or refunded!\n" +
+    "• ━━━━━━━━━━━━━━━━━━━━ •\n\n" +
+    "👉 *Tap 'Confirm & Submit' to proceed, or 'Cancel' to abort:*";
+
+  Api.sendMessage({
+    text: verifyTextUPI,
+    parse_mode: "Markdown",
+    reply_markup: { inline_keyboard: confirmInl }
+  });
 }

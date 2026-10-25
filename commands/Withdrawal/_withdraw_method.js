@@ -16,6 +16,10 @@
   group: 
 CMD*/
 
+if (request && request.id) {
+  Api.answerCallbackQuery({ callback_query_id: request.id });
+}
+
 var selectedMethod = (params || "").trim().toLowerCase();
 if (selectedMethod !== "usdt") {
   selectedMethod = "upi";
@@ -25,12 +29,20 @@ User.setProperty("current_with_method", selectedMethod, "string");
 
 var balance = Libs.ResourcesLib.userRes("Available_For_Payout").value();
 var withTaxPercent = parseFloat(Bot.getProperty("WithdrawTaxPercent", 0));
-var taxText = withTaxPercent > 0 ? "\n▫️ *Withdrawal Fee / Tax:* " + withTaxPercent + "%" : "";
+var taxText = withTaxPercent > 0 ? "\n▫️ *Withdrawal Fee / Tax:* `" + withTaxPercent + "%`" : "";
 
 if (selectedMethod === "upi") {
   var upi = User.getProperty("upi_id");
   if (!upi) {
-    Bot.sendMessage("🗂 *You Need To Setup Your UPI ID First!*\n\nGo to ⚙️ *Settings* ➔ *Wallet* to set your UPI address.");
+    var noUpiInl = [
+      [{ text: "🇮🇳 Set UPI ID Now", callback_data: "/s_wall" }],
+      [{ text: "🔙 Back to Methods", callback_data: "/withdraw" }]
+    ];
+    Api.sendMessage({
+      text: "🗂 *You Need To Setup Your UPI ID First!*\n\nPlease configure your UPI address to proceed with withdrawal.",
+      parse_mode: "Markdown",
+      reply_markup: { inline_keyboard: noUpiInl }
+    });
     return;
   }
 
@@ -38,20 +50,36 @@ if (selectedMethod === "upi") {
   var maxWithdrawINR = parseFloat(Bot.getProperty("MaxWithdrawAmount", 1000));
 
   if (balance < minWithdrawINR) {
-    Bot.sendMessage("⚠️ *Insufficient Balance For UPI Withdrawal!*\n\n💰 *Your Available Balance:* ₹" + balance.toFixed(2) + "\n▫️ *Minimum Withdrawal:* ₹" + minWithdrawINR);
+    var lowBalInl = [
+      [{ text: "🔙 Back to Methods", callback_data: "/withdraw" }]
+    ];
+    Api.sendMessage({
+      text: "⚠️ *Insufficient Balance For UPI Withdrawal!*\n\n💰 *Your Available Balance:* ₹" + balance.toFixed(2) + "\n▫️ *Minimum Withdrawal:* ₹" + minWithdrawINR,
+      parse_mode: "Markdown",
+      reply_markup: { inline_keyboard: lowBalInl }
+    });
     return;
   }
 
   var textUPI = "📤 *UPI Withdrawal Request*\n" +
     "• ━━━━━━━━━━━━━━━━━━━━ •\n" +
-    "💰 *Available For Payout:* ₹" + balance.toFixed(2) + "\n" +
+    "💰 *Available For Payout:* `₹" + balance.toFixed(2) + "`\n" +
     "🏦 *Registered UPI:* `" + upi + "`\n" +
-    "▫️ *Min Withdrawal:* ₹" + minWithdrawINR + "\n" +
-    "▫️ *Max Withdrawal:* ₹" + maxWithdrawINR + taxText + "\n" +
+    "▫️ *Min Withdrawal:* `₹" + minWithdrawINR + "`\n" +
+    "▫️ *Max Withdrawal:* `₹" + maxWithdrawINR + "`" + taxText + "\n" +
     "• ━━━━━━━━━━━━━━━━━━━━ •\n\n" +
-    "👉 *Enter the amount you wish to withdraw in ₹:*";
+    "👉 *Enter the amount you wish to withdraw in ₹:*\n" +
+    "_(Example: 50 or 100)_";
 
-  Bot.sendMessage(textUPI, { parse_mode: "Markdown" });
+  var cancelInl = [
+    [{ text: "❌ Cancel Withdrawal", callback_data: "/cancel_with" }]
+  ];
+
+  Api.sendMessage({
+    text: textUPI,
+    parse_mode: "Markdown",
+    reply_markup: { inline_keyboard: cancelInl }
+  });
   Bot.runCommand("/withdraw_amount");
   return;
 }
@@ -59,7 +87,15 @@ if (selectedMethod === "upi") {
 if (selectedMethod === "usdt") {
   var usdt = User.getProperty("usdt_bep20");
   if (!usdt) {
-    Bot.sendMessage("💎 *You Need To Setup Your USDT (BEP20) Address First!*\n\nGo to ⚙️ *Settings* ➔ *Wallet* to set your BEP20 address.");
+    var noUsdtInl = [
+      [{ text: "💎 Set USDT (BEP20) Address", callback_data: "/s_usdt" }],
+      [{ text: "🔙 Back to Methods", callback_data: "/withdraw" }]
+    ];
+    Api.sendMessage({
+      text: "💎 *You Need To Setup Your USDT (BEP20) Address First!*\n\nPlease configure your BEP20 address in Settings to proceed.",
+      parse_mode: "Markdown",
+      reply_markup: { inline_keyboard: noUsdtInl }
+    });
     return;
   }
 
@@ -71,12 +107,16 @@ if (selectedMethod === "usdt") {
   var maxUSDTinINR = maxUSDT * usdtRate;
 
   if (balance < minUSDTinINR) {
-    Bot.sendMessage(
-      "⚠️ *Insufficient Balance For USDT Withdrawal!*\n\n" +
-      "💰 *Your Available Balance:* ₹" + balance.toFixed(2) + " (~" + (balance / usdtRate).toFixed(2) + " USDT)\n" +
-      "▫️ *Minimum Withdrawal:* " + minUSDT + " USDT (~₹" + minUSDTinINR.toFixed(2) + ")",
-      { parse_mode: "Markdown" }
-    );
+    var lowUsdtInl = [
+      [{ text: "🔙 Back to Methods", callback_data: "/withdraw" }]
+    ];
+    Api.sendMessage({
+      text: "⚠️ *Insufficient Balance For USDT Withdrawal!*\n\n" +
+        "💰 *Your Available Balance:* ₹" + balance.toFixed(2) + " (~" + (balance / usdtRate).toFixed(2) + " USDT)\n" +
+        "▫️ *Minimum Withdrawal:* `" + minUSDT + " USDT` (~₹" + minUSDTinINR.toFixed(2) + ")",
+      parse_mode: "Markdown",
+      reply_markup: { inline_keyboard: lowUsdtInl }
+    });
     return;
   }
 
@@ -84,7 +124,7 @@ if (selectedMethod === "usdt") {
 
   var textUSDT = "💎 *USDT (BEP20 / BSC) Withdrawal Request*\n" +
     "• ━━━━━━━━━━━━━━━━━━━━ •\n" +
-    "💰 *Available For Payout:* ₹" + balance.toFixed(2) + " _(~" + approxUSDT + " USDT)_\n" +
+    "💰 *Available For Payout:* `₹" + balance.toFixed(2) + "` _(~" + approxUSDT + " USDT)_\n" +
     "📊 *Exchange Rate:* `1 USDT = ₹" + usdtRate.toFixed(2) + "`\n" +
     "📁 *Registered BEP20 Address:*\n`" + usdt + "`\n" +
     "🌐 *Network:* Binance Smart Chain (BEP20)\n\n" +
@@ -98,7 +138,15 @@ if (selectedMethod === "usdt") {
     "👉 *Enter the amount in ₹ to withdraw as USDT:*\n" +
     "_(Example: enter " + minUSDTinINR.toFixed(0) + " for " + minUSDT + " USDT, or " + (minUSDTinINR * 2).toFixed(0) + " for " + (minUSDT * 2) + " USDT)_";
 
-  Bot.sendMessage(textUSDT, { parse_mode: "Markdown" });
+  var cancelInl = [
+    [{ text: "❌ Cancel Withdrawal", callback_data: "/cancel_with" }]
+  ];
+
+  Api.sendMessage({
+    text: textUSDT,
+    parse_mode: "Markdown",
+    reply_markup: { inline_keyboard: cancelInl }
+  });
   Bot.runCommand("/withdraw_amount");
   return;
 }
