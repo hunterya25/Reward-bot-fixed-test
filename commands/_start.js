@@ -127,11 +127,28 @@ if (pendingRef && !alreadyReferred && pendingRef !== user.telegramid.toString())
 
   if (!alreadyInList) {
     var nowTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+
+    // Determine the commission rate for this referee (checks if referrer has active VIP rate)
+    var defaultComm = Bot.getProperty("ReferralTaskCommission", 0.5);
+    var refComm = defaultComm;
+
+    var customRate = Bot.getProperty("CustomRefRate_" + refId);
+    if (customRate && customRate.amount) {
+      var nowTimeMs = new Date().getTime();
+      if (customRate.is_lifetime || (customRate.expires_at && nowTimeMs < customRate.expires_at)) {
+        refComm = parseFloat(customRate.amount);
+      }
+    }
+
+    // Lock in this commission rate permanently for this referee!
+    Bot.setProperty("RefereeRate_" + user.telegramid, refComm, "float");
+
     refs.unshift({
       id: user.telegramid,
       name: user.first_name || "User",
       username: user.username || "",
       joined: nowTime,
+      commission_rate: refComm,
       tasks_completed: 0,
       total_earned: 0
     });
@@ -141,7 +158,6 @@ if (pendingRef && !alreadyReferred && pendingRef !== user.telegramid.toString())
     var refCountRes = Libs.ResourcesLib.anotherUserRes("total_referrals", refId);
     refCountRes.add(1);
 
-    var refComm = Bot.getProperty("ReferralTaskCommission", 0.5);
     var refChat = Bot.getProperty("Chat" + refId);
     var refChatTarget = (refChat && refChat.chatid) ? refChat.chatid : refId;
 

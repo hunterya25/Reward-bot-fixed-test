@@ -65,33 +65,42 @@ Api.sendMessage({
   disable_web_page_preview: true
 });
 
-// 🤝 Process Referral Commission (Supports Custom/Boosted User Rates + Auto-Expiry)
+// 🤝 Process Referral Commission (Supports Locked-in VIP Referee Rates + Auto-Expiry)
 var refGate = Bot.getProperty("Referral_status", "✅");
 if (refGate != "❌") {
   var refId = Bot.getProperty("UserReferrer_" + users);
   if (refId && refId != users) {
-    var defaultComm = Bot.getProperty("ReferralTaskCommission", 0.5);
-    var refComm = defaultComm;
+    // 🎯 PRIORITY 1: Check if this referee was locked in at a specific rate when they joined
+    var lockedRate = Bot.getProperty("RefereeRate_" + users);
+    var refComm;
 
-    // Check for custom/boosted referral rate for this referrer
-    var customRate = Bot.getProperty("CustomRefRate_" + refId);
-    if (customRate && customRate.amount) {
-      var nowTimeMs = new Date().getTime();
-      if (customRate.is_lifetime || (customRate.expires_at && nowTimeMs < customRate.expires_at)) {
-        refComm = parseFloat(customRate.amount);
-      } else if (customRate.expires_at && nowTimeMs >= customRate.expires_at) {
-        // Expired! Automatically remove custom rate and revert to default
-        Bot.setProperty("CustomRefRate_" + refId, null);
-        var boostedList = Bot.getProperty("BoostedRefUsers", []);
-        var newBoosted = [];
-        for (var bi = 0; bi < boostedList.length; bi++) {
-          var bItem = boostedList[bi];
-          var bId = (typeof bItem === "object") ? bItem.id : bItem;
-          if (bId != refId) {
-            newBoosted.push(bItem);
+    if (lockedRate !== null && lockedRate !== undefined && !isNaN(parseFloat(lockedRate))) {
+      // 🔒 Locked-in rate from when this referee joined (e.g. VIP rate forever!)
+      refComm = parseFloat(lockedRate);
+    } else {
+      // Fallback: Check referrer's active custom rate or default
+      var defaultComm = Bot.getProperty("ReferralTaskCommission", 0.5);
+      refComm = defaultComm;
+
+      var customRate = Bot.getProperty("CustomRefRate_" + refId);
+      if (customRate && customRate.amount) {
+        var nowTimeMs = new Date().getTime();
+        if (customRate.is_lifetime || (customRate.expires_at && nowTimeMs < customRate.expires_at)) {
+          refComm = parseFloat(customRate.amount);
+        } else if (customRate.expires_at && nowTimeMs >= customRate.expires_at) {
+          // Expired! Automatically remove custom rate and revert to default
+          Bot.setProperty("CustomRefRate_" + refId, null);
+          var boostedList = Bot.getProperty("BoostedRefUsers", []);
+          var newBoosted = [];
+          for (var bi = 0; bi < boostedList.length; bi++) {
+            var bItem = boostedList[bi];
+            var bId = (typeof bItem === "object") ? bItem.id : bItem;
+            if (bId != refId) {
+              newBoosted.push(bItem);
+            }
           }
+          Bot.setProperty("BoostedRefUsers", newBoosted, "json");
         }
-        Bot.setProperty("BoostedRefUsers", newBoosted, "json");
       }
     }
 

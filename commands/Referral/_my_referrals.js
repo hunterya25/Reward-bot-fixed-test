@@ -68,16 +68,18 @@ for (var i = 0; i < pageItems.length; i++) {
   var uname = ref.username ? " (@" + ref.username + ")" : "";
   var tasksCount = ref.tasks_completed || 0;
   var earnedAmt = ref.total_earned || 0;
+  var rate = ref.commission_rate || Bot.getProperty("RefereeRate_" + ref.id) || 0.5;
 
   txt += "🔹 *" + num + ". " + ref.name + "*" + uname + "\n" +
     "   🆔 User ID: `" + ref.id + "`\n" +
     "   📅 Joined: " + (ref.joined || "N/A") + "\n" +
+    "   💎 Commission Rate: *₹" + parseFloat(rate).toFixed(2) + " / task* (Lifetime)\n" +
     "   📋 Tasks Completed: *" + tasksCount + "*\n" +
     "   💰 Earned From This Friend: *₹" + (typeof earnedAmt === "number" ? earnedAmt.toFixed(2) : earnedAmt) + "*\n\n";
 }
 
 txt += "• ━━━━━━━━━━━━━━━━━━━━ •\n" +
-  "💡 _You receive ₹0.50 automatically every time a friend completes a task!_";
+  "💡 _You receive commission automatically every time a referred friend completes a task!_";
 
 var inl = [];
 
