@@ -28,9 +28,13 @@ var refComm = Bot.getProperty("ReferralTaskCommission", 0.5);
 var dailyBonus = Bot.getProperty("DailyBonusAmount", 0.1);
 var refGate = Bot.getProperty("Referral_status", "✅");
 
+var boostedUsers = Bot.getProperty("BoostedRefUsers", []);
+var boostedCount = boostedUsers ? boostedUsers.length : 0;
+
 var text = "🤝 *Referral Program & Bonus Configuration*\n" +
   "• ━━━━━━━━━━━━━━━━━━━━ •\n\n" +
-  "💎 *Referral Task Commission:* `₹" + parseFloat(refComm).toFixed(2) + "` per completed task\n" +
+  "💎 *Public Referral Commission:* `₹" + parseFloat(refComm).toFixed(2) + "` per task\n" +
+  "🌟 *Users with Custom Rates:* `" + boostedCount + " users`\n" +
   "🎁 *Daily Check-in Bonus:* `₹" + parseFloat(dailyBonus).toFixed(2) + "`\n" +
   "⚡️ *Referral Gate Status:* " + refGate + "\n\n" +
   "• ━━━━━━━━━━━━━━━━━━━━ •\n" +
@@ -38,7 +42,10 @@ var text = "🤝 *Referral Program & Bonus Configuration*\n" +
 
 var inl = [
   [
-    { text: "✏️ Set Task Commission (₹" + refComm + ")", callback_data: "/set_ref_comm" }
+    { text: "✏️ Set Public Commission (₹" + refComm + ")", callback_data: "/set_ref_comm" }
+  ],
+  [
+    { text: "🌟 Custom / VIP User Rates (" + boostedCount + ")", callback_data: "/custom_ref_list" }
   ],
   [
     { text: "✏️ Set Daily Bonus (₹" + dailyBonus + ")", callback_data: "/set_daily_bonus" }

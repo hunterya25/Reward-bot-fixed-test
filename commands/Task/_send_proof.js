@@ -16,6 +16,16 @@
   group: 
 CMD*/
 
+if (request && request.id) {
+  try {
+    Api.answerCallbackQuery({
+      callback_query_id: request.id,
+      text: "✅ Proof submitted successfully!",
+      show_alert: false
+    });
+  } catch (e) {}
+}
+
 var pi = User.getProperty("task_admin");
 var bbi = Bot.getProperty("Task+" + pi);
 
@@ -59,9 +69,12 @@ var button = [
   [
     {
       text: "✅ Approved",
-      callback_data: "/app " + user.telegramid + "-" + nam + "-" + rew
+      callback_data: "/app " + user.telegramid + "###" + nam + "###" + rew
     },
-    { text: "❌ Reject", callback_data: "/rej " + user.telegramid + "-" + nam }
+    {
+      text: "❌ Reject",
+      callback_data: "/rej " + user.telegramid + "###" + nam
+    }
   ]
 ];
 
@@ -149,8 +162,31 @@ if (dbChan) {
   }
 }
 
-User.setProperty("task_proof_media_list", [], "json");
+// Update the inline message to show submitted state
+if (request && request.message && request.message.message_id) {
+  try {
+    Api.editMessageText({
+      chat_id: chat.chatid,
+      message_id: request.message.message_id,
+      text: "✅ <b>Proof Submitted Successfully!</b>\n\nYour proof (" + proofList.length + " item(s)) has been sent to the task owner for verification.",
+      parse_mode: "html"
+    });
+  } catch (e) {}
+}
 
-Bot.sendMessage(
-  "*🥳 Very Good, Your " + proofList.length + " Proof item(s) Have Been Successfully Sent To The Owner Of The Task!*"
-);
+// Send detailed confirmation message to the worker
+var confirmMsg = "🎉 <b>Proof Submitted Successfully!</b> 🚀\n" +
+  "• ━━━━━━━━━━━━━━━━━━━━ •\n" +
+  "📌 <b>Task:</b> " + nam + "\n" +
+  "💰 <b>Reward:</b> ₹" + rew + " Rs\n" +
+  "📸 <b>Proofs Attached:</b> " + proofList.length + " media item(s)\n" +
+  "• ━━━━━━━━━━━━━━━━━━━━ •\n\n" +
+  "⏳ <i>The task owner has received your proof. Once approved, the reward will be credited directly to your balance automatically!</i>";
+
+Api.sendMessage({
+  chat_id: chat.chatid,
+  text: confirmMsg,
+  parse_mode: "html"
+});
+
+User.setProperty("task_proof_media_list", [], "json");

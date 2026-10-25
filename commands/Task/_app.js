@@ -16,39 +16,84 @@
   group: 
 CMD*/
 
-Api.deleteMessage({ message_id: request.message.message_id })
-var splt = params.split("-")
-var users = splt[0]
-var nae = splt[1]
-//var rew = splt[2]
-var bbi = Bot.getProperty("Task+" + nae)
-var nam = bbi.name
-var des = bbi.des
-var clm = bbi.claim
-var rew = bbi.payment
-var id = bbi.id
-var admin = bbi.admin
-let bal = Libs.ResourcesLib.anotherUserRes("Available_For_Payout", users)
-bal.add(+rew)
+if (request && request.message && request.message.message_id) {
+  try {
+    Api.deleteMessage({ message_id: request.message.message_id });
+  } catch (e) {}
+}
+
+var users, nae, rew;
+if (params.indexOf("###") >= 0) {
+  var splt = params.split("###");
+  users = splt[0];
+  nae = splt[1];
+  rew = splt[2];
+} else {
+  var splt = params.split("-");
+  users = splt[0];
+  nae = splt[1];
+  rew = splt[2];
+}
+
+var bbi = Bot.getProperty("Task+" + nae);
+if (!bbi) {
+  Bot.sendMessage("❌ Task not found or already completed!");
+  return;
+}
+
+var nam = bbi.name;
+var des = bbi.des;
+var clm = bbi.claim;
+var rew = bbi.payment;
+var id = bbi.id;
+var admin = bbi.admin;
+
+let bal = Libs.ResourcesLib.anotherUserRes("Available_For_Payout", users);
+bal.add(+rew);
+
 var txt = `• ━━━━━━━━━━━━━━━━━ •
-*» NEW PAYMENT RECEIVED FOR TASK «
+*» NEW PAYMENT RECEIVED FOR TASK «*
 • ━━━━━━━━━━━━━━━━━ •
-🥳 Your Documents For Task* ${nam} *Was Successfully Approved.*
+🥳 Your Proof For Task *${nam}* Was Successfully Approved!
 *💵 Payment:* ${rew} *₹Rs*
-• ━━━━━━━━━━━━━━━━━ •`
+• ━━━━━━━━━━━━━━━━━ •`;
+
 Api.sendMessage({
   chat_id: users,
   text: txt,
   parse_mode: "markdown",
   disable_web_page_preview: true
-})
+});
 
-// 🤝 Process Referral Commission (0.5 RS per task completed by referred user)
+// 🤝 Process Referral Commission (Supports Custom/Boosted User Rates + Auto-Expiry)
 var refGate = Bot.getProperty("Referral_status", "✅");
 if (refGate != "❌") {
   var refId = Bot.getProperty("UserReferrer_" + users);
   if (refId && refId != users) {
-    var refComm = Bot.getProperty("ReferralTaskCommission", 0.5);
+    var defaultComm = Bot.getProperty("ReferralTaskCommission", 0.5);
+    var refComm = defaultComm;
+
+    // Check for custom/boosted referral rate for this referrer
+    var customRate = Bot.getProperty("CustomRefRate_" + refId);
+    if (customRate && customRate.amount) {
+      var nowTimeMs = new Date().getTime();
+      if (customRate.is_lifetime || (customRate.expires_at && nowTimeMs < customRate.expires_at)) {
+        refComm = parseFloat(customRate.amount);
+      } else if (customRate.expires_at && nowTimeMs >= customRate.expires_at) {
+        // Expired! Automatically remove custom rate and revert to default
+        Bot.setProperty("CustomRefRate_" + refId, null);
+        var boostedList = Bot.getProperty("BoostedRefUsers", []);
+        var newBoosted = [];
+        for (var bi = 0; bi < boostedList.length; bi++) {
+          var bItem = boostedList[bi];
+          var bId = (typeof bItem === "object") ? bItem.id : bItem;
+          if (bId != refId) {
+            newBoosted.push(bItem);
+          }
+        }
+        Bot.setProperty("BoostedRefUsers", newBoosted, "json");
+      }
+    }
 
     // Credit Referrer's Available_For_Payout balance
     var refBal = Libs.ResourcesLib.anotherUserRes("Available_For_Payout", refId);
@@ -90,22 +135,27 @@ if (refGate != "❌") {
     Bot.setProperty("ReferralHistory_" + refId, refHistory, "json");
 
     // Send instant notification to Referrer
-    var refMsg = "🎉 *Referral Commission Earned!* 🥳\n\n" +
-      "👤 Your referral *" + refereeName + "* (`" + users + "`) completed task *" + nam + "*!\n" +
-      "💰 *Commission Credited:* +₹" + refComm.toFixed(2) + "\n" +
-      "📊 *Available For Payout:* ₹" + refBal.value().toFixed(2) + "\n\n" +
-      "🚀 _Earnings from your referrals continue for lifetime!_";
+    var refMsg = "🎉 <b>Referral Commission Earned!</b> 🥳\n\n" +
+      "👤 Your referral <b>" + refereeName + "</b> (<code>" + users + "</code>) completed task <b>" + nam + "</b>!\n" +
+      "💰 <b>Commission Credited:</b> +₹" + refComm.toFixed(2) + "\n" +
+      "📊 <b>Available For Payout:</b> ₹" + refBal.value().toFixed(2) + "\n\n" +
+      "🚀 <i>Earnings from your referrals continue for lifetime!</i>";
 
-    Bot.sendMessageToChatWithId(refId, refMsg, { parse_mode: "Markdown" });
+    Api.sendMessage({
+      chat_id: refId,
+      text: refMsg,
+      parse_mode: "html"
+    });
   }
 }
+
 var tto = `*• ━━━━━━━━━━━━━━━━━ •
 » THE PAYMENT WAS SENT SUCCESSFULLY «*
 • ━━━━━━━━━━━━━━━━━ •
 🤩_ You Have Done Things Well And Now We Have A Member Happy For The Reward You Gave Him For Doing Your Task!_
-• ━━━━━━━━━━━━━━━━━ •`
-Bot.sendMessage(tto)
-Bot.setProperty(nam + "" + users + "" + rew + "" + id, true)
+• ━━━━━━━━━━━━━━━━━ •`;
+Bot.sendMessage(tto);
+Bot.setProperty(nam + "" + users + "" + rew + "" + id, true);
 
 // 🗄 Log Approval to Storage Channel if configured
 var dbChan = Bot.getProperty("StorageChannelID");
@@ -118,29 +168,28 @@ if (dbChan) {
     });
   } catch (e) {}
 }
-var use = Libs.ResourcesLib.anotherChatRes("total_claimed", id)
-use.add(1)
+
+var use = Libs.ResourcesLib.anotherChatRes("total_claimed", id);
+use.add(1);
+
 if (use.value() == clm) {
-  Bot.setProperty("Status?" + nam, null)
-  var ad = Bot.getProperty("Tasks" + admin, [])
-  var to = Bot.getProperty("TaskJsonList", [])
+  Bot.setProperty("Status?" + nam, null);
+  var ad = Bot.getProperty("Tasks" + admin, []);
+  var to = Bot.getProperty("TaskJsonList", []);
   for (var index in ad) {
-    var uniqueid = ad[index]
+    var uniqueid = ad[index];
     if (uniqueid == nam) {
-      ad.splice(parseInt(index), 1)
+      ad.splice(parseInt(index), 1);
     }
   }
-  Bot.setProperty("Tasks" + admin, ad, "json")
+  Bot.setProperty("Tasks" + admin, ad, "json");
   for (var index in to) {
-    var uniqueid = to[index].name
+    var uniqueid = to[index].name;
     if (uniqueid == nam) {
-      to.splice(parseInt(index), 1)
+      to.splice(parseInt(index), 1);
     }
   }
-  Bot.setProperty("TaskJsonList", to, "json")
-
-  Bot.setProperty("Task+" + nam, null)
-
-  return
+  Bot.setProperty("TaskJsonList", to, "json");
+  Bot.setProperty("Task+" + nam, null);
+  return;
 }
-
