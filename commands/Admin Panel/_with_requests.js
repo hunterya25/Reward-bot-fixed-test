@@ -68,12 +68,23 @@ for (var i = 0; i < pageItems.length; i++) {
   var wData = Bot.getProperty("With_" + wid);
   if (wData) {
     var itemNo = startIndex + i + 1;
-    txt += "🔹 *" + itemNo + ". #" + wid + "* ➔ *₹" + wData.amount + "* | `" + wData.upi + "`\n";
-    txt += "   👤 User: " + wData.first_name + " (`" + wData.user_id + "`)\n\n";
-    inl.push([
-      { text: "✅ Pay ₹" + wData.amount + " (#" + wid + ")", callback_data: "/app_with " + wid + " " + page },
-      { text: "❌ Reject", callback_data: "/rej_with " + wid + " " + page }
-    ]);
+    var isCrypto = (wData.method === "USDT");
+    if (isCrypto) {
+      txt += "🔹 *" + itemNo + ". #" + wid + "* ➔ `💎 " + wData.usdt_amount + " USDT` (~₹" + wData.amount + ")\n";
+      txt += "   👤 User: " + wData.first_name + " (`" + wData.user_id + "`)\n";
+      txt += "   📁 BEP20: `" + (wData.crypto_address || wData.upi) + "`\n\n";
+      inl.push([
+        { text: "✅ Pay " + wData.usdt_amount + " USDT (#" + wid + ")", callback_data: "/app_with " + wid + " " + page },
+        { text: "❌ Reject", callback_data: "/rej_with " + wid + " " + page }
+      ]);
+    } else {
+      txt += "🔹 *" + itemNo + ". #" + wid + "* ➔ *₹" + wData.amount + "* | `" + wData.upi + "`\n";
+      txt += "   👤 User: " + wData.first_name + " (`" + wData.user_id + "`)\n\n";
+      inl.push([
+        { text: "✅ Pay ₹" + wData.amount + " (#" + wid + ")", callback_data: "/app_with " + wid + " " + page },
+        { text: "❌ Reject", callback_data: "/rej_with " + wid + " " + page }
+      ]);
+    }
   }
 }
 

@@ -12,7 +12,7 @@
   <<KEYBOARD
 
   KEYBOARD
-  aliases: 🤑 withdraw
+  aliases: 🤑 withdraw, 🤑 Withdraw
   group: 
 CMD*/
 
@@ -25,32 +25,58 @@ if (wit == "❌" && user.telegramid != adm) {
 }
 
 var upi = User.getProperty("upi_id");
-if (!upi) {
-  Bot.sendMessage("🗂 *You Need To Setup Your UPI ID First!*\n\nGo to ⚙️ *Settings* ➔ *Wallet* to set your UPI address.");
+var usdt = User.getProperty("usdt_bep20");
+
+if (!upi && !usdt) {
+  var noWalletText = "🗂 *You Need To Setup A Payout Method First!*\n\n" +
+    "You have not configured any payment address yet. Please add your payout method:\n" +
+    "• 🇮🇳 **UPI ID** (for instant bank/Paytm payout)\n" +
+    "• 💎 **USDT (BEP20)** (for direct crypto payout)\n\n" +
+    "👉 Tap the button below to configure your wallet in Settings:";
+
+  var noWalletInl = [
+    [{ text: "💼 Configure Wallet in Settings", callback_data: "/wallet" }]
+  ];
+
+  Bot.sendMessage(noWalletText, { parse_mode: "Markdown", reply_markup: { inline_keyboard: noWalletInl } });
   return;
 }
+
+var balance = Libs.ResourcesLib.userRes("Available_For_Payout").value();
+var usdtRate = parseFloat(Bot.getProperty("USDT_INR_Rate", 90));
+var approxUSDT = (balance / usdtRate).toFixed(2);
 
 var minWithdrawINR = parseFloat(Bot.getProperty("MinWithdrawAmount", 1));
-var maxWithdrawINR = parseFloat(Bot.getProperty("MaxWithdrawAmount", 1000));
-var withTaxPercent = parseFloat(Bot.getProperty("WithdrawTaxPercent", 0));
-var balance = Libs.ResourcesLib.userRes("Available_For_Payout").value();
+var minUSDT = parseFloat(Bot.getProperty("MinWithdrawUSDT", 1));
+var minUSDTinINR = minUSDT * usdtRate;
 
-if (balance < minWithdrawINR) {
-  Bot.sendMessage("⚠️ *Insufficient Balance For Withdrawal!*\n\n💰 *Your Available Balance:* ₹" + balance.toFixed(2) + "\n▫️ *Minimum Withdrawal:* ₹" + minWithdrawINR);
+// If both UPI and USDT are available, let the user choose
+if (upi && usdt) {
+  var methodText = "📤 *Select Your Withdrawal Method*\n" +
+    "• ━━━━━━━━━━━━━━━━━━━━ •\n" +
+    "💰 *Available For Payout:* ₹" + balance.toFixed(2) + " _(~" + approxUSDT + " USDT)_\n\n" +
+    "Choose how you want to receive your earnings:\n" +
+    "1️⃣ 🇮🇳 *UPI* ➔ `" + upi + "`\n" +
+    "2️⃣ 💎 *USDT (BEP20)* ➔ `" + usdt.substring(0, 8) + "..." + usdt.substring(usdt.length - 6) + "`\n" +
+    "• ━━━━━━━━━━━━━━━━━━━━ •";
+
+  var methodInl = [
+    [{ text: "🇮🇳 Withdraw to UPI (Min ₹" + minWithdrawINR + ")", callback_data: "/withdraw_method upi" }],
+    [{ text: "💎 Withdraw to USDT BEP20 (Min " + minUSDT + " USDT)", callback_data: "/withdraw_method usdt" }]
+  ];
+
+  Bot.sendMessage(methodText, { parse_mode: "Markdown", reply_markup: { inline_keyboard: methodInl } });
   return;
 }
 
-var taxText = withTaxPercent > 0 ? "\n▫️ *Fee / Tax:* " + withTaxPercent + "%" : "";
+// If only UPI is available
+if (upi && !usdt) {
+  Bot.runCommand("/withdraw_method upi");
+  return;
+}
 
-Bot.sendMessage(
-  "📤 *Withdrawal Request*\n" +
-  "• ━━━━━━━━━━━━━━━━━━━━ •\n" +
-  "💰 *Available For Payout:* ₹" + balance.toFixed(2) + "\n" +
-  "🏦 *Registered UPI:* `" + upi + "`\n" +
-  "▫️ *Min Withdrawal:* ₹" + minWithdrawINR + "\n" +
-  "▫️ *Max Withdrawal:* ₹" + maxWithdrawINR + taxText + "\n" +
-  "• ━━━━━━━━━━━━━━━━━━━━ •\n\n" +
-  "👉 *Enter the amount you wish to withdraw in ₹:*"
-);
-
-Bot.runCommand("/withdraw_amount");
+// If only USDT is available
+if (!upi && usdt) {
+  Bot.runCommand("/withdraw_method usdt");
+  return;
+}

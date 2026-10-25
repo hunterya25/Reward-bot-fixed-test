@@ -74,17 +74,34 @@ for (var i in pendingW) {
 Bot.setProperty("PendingWithdrawals", newPending, "json");
 
 // Log approved status in user history
+var isCrypto = (withData.method === "USDT");
 var his = Bot.getProperty("history" + withData.user_id) || "";
-var newHis = "✅ *Withdrawal Paid:*\n📅 Time: " + withData.approved_at + "\n💰 Amount: ₹" + withData.amount + " to `" + withData.upi + "`\n🆔 Status: Completed (#" + wid + ")\n\n" + his;
+var hisDetails = isCrypto
+  ? (withData.usdt_amount + " USDT (₹" + withData.amount + ") to `" + withData.crypto_address + "`")
+  : ("₹" + withData.amount + " to `" + withData.upi + "`");
+
+var newHis = "✅ *Withdrawal Paid:*\n📅 Time: " + withData.approved_at + "\n💰 Amount: " + hisDetails + "\n🆔 Status: Completed (#" + wid + ")\n\n" + his;
 Bot.setProperty("history" + withData.user_id, newHis);
 
 // Notify User
-var userMsg = "🎉 *Congratulations! Withdrawal Approved & Paid!* 🥳\n\n" +
-  "💰 *Amount Credited:* ₹" + withData.amount + "\n" +
-  "🏦 *UPI ID:* `" + withData.upi + "`\n" +
-  "🆔 *Request ID:* #" + wid + "\n" +
-  "📅 *Completed:* " + withData.approved_at + "\n\n" +
-  "🚀 *Thank you for completing tasks and earning with us!*";
+var userMsg = "";
+if (isCrypto) {
+  userMsg = "🎉 *Congratulations! USDT Withdrawal Approved & Paid!* 🥳\n\n" +
+    "💎 *USDT Sent:* `" + withData.usdt_amount + " USDT`\n" +
+    "💰 *Amount in INR:* ₹" + withData.amount + "\n" +
+    "🌐 *Network:* Binance Smart Chain (BEP20)\n" +
+    "📁 *Address:* `" + withData.crypto_address + "`\n" +
+    "🆔 *Request ID:* #" + wid + "\n" +
+    "📅 *Completed:* " + withData.approved_at + "\n\n" +
+    "🚀 *Thank you for completing tasks and earning with us!*";
+} else {
+  userMsg = "🎉 *Congratulations! Withdrawal Approved & Paid!* 🥳\n\n" +
+    "💰 *Amount Credited:* ₹" + withData.amount + "\n" +
+    "🏦 *UPI ID:* `" + withData.upi + "`\n" +
+    "🆔 *Request ID:* #" + wid + "\n" +
+    "📅 *Completed:* " + withData.approved_at + "\n\n" +
+    "🚀 *Thank you for completing tasks and earning with us!*";
+}
 
 Bot.sendMessageToChatWithId(withData.user_id, userMsg, { parse_mode: "Markdown" });
 
@@ -100,9 +117,15 @@ if (sepMsgId && adminChatId) {
 // If clicked from Admin Panel, refresh the pending list
 var clickedFromPanel = prms.length > 1;
 if (clickedFromPanel) {
-  Bot.sendMessage("✅ *Withdrawal #" + wid + " (₹" + withData.amount + ") Approved & Paid!*", { parse_mode: "Markdown" });
+  var adminFeedback = isCrypto
+    ? ("✅ *Withdrawal #" + wid + " (" + withData.usdt_amount + " USDT) Approved & Paid!*")
+    : ("✅ *Withdrawal #" + wid + " (₹" + withData.amount + ") Approved & Paid!*");
+  Bot.sendMessage(adminFeedback, { parse_mode: "Markdown" });
   Bot.runCommand("/with_requests " + returnPage);
 } else {
   // Clicked from separate message
-  Bot.sendMessage("✅ *Withdrawal #" + wid + " Successfully Approved & Paid!*\n\n💰 Amount: ₹" + withData.amount + "\n🏦 UPI: `" + withData.upi + "`", { parse_mode: "Markdown" });
+  var directFeedback = isCrypto
+    ? ("✅ *Withdrawal #" + wid + " Successfully Approved & Paid!*\n\n💎 USDT: `" + withData.usdt_amount + " USDT` (~₹" + withData.amount + ")\n📁 BEP20: `" + withData.crypto_address + "`")
+    : ("✅ *Withdrawal #" + wid + " Successfully Approved & Paid!*\n\n💰 Amount: ₹" + withData.amount + "\n🏦 UPI: `" + withData.upi + "`");
+  Bot.sendMessage(directFeedback, { parse_mode: "Markdown" });
 }

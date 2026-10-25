@@ -107,10 +107,16 @@ for (var i = 0; i < pageItems.length; i++) {
     }
 
     var amtStr = typeof wData.amount === "number" ? wData.amount.toFixed(2) : wData.amount;
+    var isCrypto = (wData.method === "USDT");
+    var destLabel = isCrypto ? "💎 *USDT (BEP20):*" : "🏦 *UPI:*";
+    var destVal = isCrypto ? (wData.crypto_address || wData.upi) : wData.upi;
+    var amountLine = isCrypto
+      ? ("💰 *Amount:* `" + wData.usdt_amount + " USDT` (~₹" + amtStr + ")")
+      : ("💰 *Amount:* ₹" + amtStr);
 
     txt += "🔹 *" + num + ". Request #" + wid + "*\n" +
-      "   💰 *Amount:* ₹" + amtStr + "\n" +
-      "   🏦 *UPI:* `" + wData.upi + "`\n" +
+      "   " + amountLine + "\n" +
+      "   " + destLabel + " `" + destVal + "`\n" +
       "   📅 *Date:* " + dateInfo + "\n" +
       "   📊 *Status:* " + statusBadge + "\n\n";
   } else {
@@ -122,7 +128,7 @@ for (var i = 0; i < pageItems.length; i++) {
 txt += "• ━━━━━━━━━━━━━━━━━ •\n" +
   "💡 *Status Legend:*\n" +
   "⏳ *Pending Review* — Under admin processing\n" +
-  "✅ *Paid & Settled* — Money credited to your UPI\n" +
+  "✅ *Paid & Settled* — Money credited to your UPI / USDT\n" +
   "❌ *Rejected & Refunded* — Balance returned to account";
 
 var inl = [];
