@@ -53,8 +53,8 @@ if (!tempData) {
 }
 
 // Immediately delete temporary property to prevent duplicate confirmations
-User.deleteProperty("temp_withdraw_data");
-User.deleteProperty("current_with_method");
+User.setProperty("temp_withdraw_data", null);
+User.setProperty("current_with_method", null);
 
 var balance = Libs.ResourcesLib.userRes("Available_For_Payout");
 if (balance.value() < tempData.amount) {

@@ -27,8 +27,8 @@ if (wit == "❌" && user.telegramid != adm) {
 var inputMsg = (message || "").trim();
 
 if (inputMsg.toLowerCase() === "/cancel" || inputMsg.toLowerCase() === "cancel") {
-  User.deleteProperty("temp_withdraw_data");
-  User.deleteProperty("current_with_method");
+  User.setProperty("temp_withdraw_data", null);
+  User.setProperty("current_with_method", null);
   Bot.sendMessage("❌ *Withdrawal request cancelled.*");
   return;
 }
